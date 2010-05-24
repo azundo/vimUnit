@@ -144,7 +144,7 @@ function! unitTest.TODO(funcName) dict	"{{{2
 endfunction
 
 " ---------------------------------------------------------------------
-" FUNCTION:	VUAssertEquals
+" FUNCTION:	AssertEquals
 " PURPOSE:
 "	Compare arguments
 " ARGUMENTS:
@@ -155,7 +155,7 @@ endfunction
 "	0 if arg1 == arg2
 "	1 if arg1 != arg2
 " ---------------------------------------------------------------------
-function! unitTest.VUAssertEquals(arg1, arg2, ...) dict	"{{{2
+function! unitTest.AssertEquals(arg1, arg2, ...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1
 	if a:arg1 == a:arg2
 		let self.testRunSuccessCount = self.testRunSuccessCount + 1
@@ -168,7 +168,7 @@ function! unitTest.VUAssertEquals(arg1, arg2, ...) dict	"{{{2
 	return bFoo
 endfunction
 " ---------------------------------------------------------------------
-" FUNCTION:	VUAssertTrue
+" FUNCTION:	AssertTrue
 " PURPOSE:
 " 	Check that the passed argument validates to true
 " ARGUMENTS:
@@ -178,7 +178,7 @@ endfunction
 " 	TRUE() if true and
 " 	FALSE() if false
 " ---------------------------------------------------------------------
-function! unitTest.VUAssertTrue(arg1, ...) dict	"{{{2
+function! unitTest.AssertTrue(arg1, ...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1
 	if a:arg1 == TRUE()
 		let self.testRunSuccessCount = self.testRunSuccessCount + 1
@@ -187,12 +187,12 @@ function! unitTest.VUAssertTrue(arg1, ...) dict	"{{{2
 		let self.testRunFailureCount = self.testRunFailureCount + 1
 		let bFoo = FALSE()
 		"TODO: What if a:1 does not exists?
-		call <SID>MsgSink('FAILED: VUAssertTrue','arg1='.a:arg1.'!='.TRUE()." MSG: ".a:1)
+		call <SID>MsgSink('FAILED: AssertTrue','arg1='.a:arg1.'!='.TRUE()." MSG: ".a:1)
 	endif	
 	return bFoo
 endfunction
 " ---------------------------------------------------------------------
-" FUNCTION:	 VUAssertFalse
+" FUNCTION:	 AssertFalse
 " PURPOSE:
 "	Test if the argument equals false
 " ARGUMENTS:
@@ -201,7 +201,7 @@ endfunction
 "	0 if true
 "	1 if false
 " ---------------------------------------------------------------------
-function! unitTest.VUAssertFalse(arg1, ...) dict	"{{{2
+function! unitTest.AssertFalse(arg1, ...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1
 	if a:arg1 == FALSE()
 		let self.testRunSuccessCount = self.testRunSuccessCount + 1
@@ -216,7 +216,7 @@ endfunction
 
 " VUAssert that the arg1 is initialized (is not null)
 " Is this situation possible in vim script?
-function! unitTest.VUAssertNotNull(arg1, ...) dict	"{{{2	
+function! unitTest.AssertNotNull(arg1, ...) dict	"{{{2	
 	"NOTE: I do not think we will have a situation in a vim-script where we
 	"can pass a variable containing a null as I understand it that is a 
 	"uninitiated variable. 
@@ -239,7 +239,7 @@ function! unitTest.VUAssertNotNull(arg1, ...) dict	"{{{2
 endfunction
 
 "Fail a test with no arguments
-function! unitTest.VUAssertFail(...) dict	"{{{2
+function! unitTest.AssertFail(...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1	
 	let self.testRunFailureCount = self.testRunFailureCount + 1
 	call <SID>MsgSink('AssertFail','')
@@ -247,18 +247,18 @@ function! unitTest.VUAssertFail(...) dict	"{{{2
 endfunction
 
 " VURunner {{{1
-function! unitTest.VURunnerRunTest() dict
-		call self.VURunnerInit()
+function! unitTest.RunTests() dict
+		call self.RunnerInit()
 		echo "Running: ".self.name
         for key in keys(self)
             if strpart(key, 0, 4) == 'Test' && type(self[key]) == type(function("tr"))
                 call self[key]()
             endif
         endfor
-		call self.VURunnerPrintStatistics(self.name)	
+		call self.PrintStatistics(self.name)	
 endfunction
 " ----------------------------------------- {{{2
-" FUNCTION:	VURunnerPrintStatistics
+" FUNCTION:	PrintStatistics
 " PURPOSE:
 "	Print statistics about test's
 " ARGUMENTS:
@@ -266,7 +266,7 @@ endfunction
 " RETURNS:
 "	String containing statistics
 " -----------------------------------------
-function! unitTest.VURunnerPrintStatistics(caller,...) dict "{{{2
+function! unitTest.PrintStatistics(caller,...) dict "{{{2
 	if exists('a:caller')
 		let sFoo = "----- ".a:caller."---------------------------------------------\n"
 	else
@@ -282,7 +282,7 @@ function! unitTest.VURunnerPrintStatistics(caller,...) dict "{{{2
 	return sFoo
 endfunction
 
-function! unitTest.VURunnerInit() dict	"{{{2
+function! unitTest.RunnerInit() dict	"{{{2
     echomsg "CLEARING: statistics"
 	let self.testRunCount = 0
 	let self.testRunFailureCount = 0
@@ -291,7 +291,7 @@ function! unitTest.VURunnerInit() dict	"{{{2
 endfunction
 
 " -----------------------------------------
-" FUNCTION:	 VURunnerExpectError
+" FUNCTION:	 ExpectFailure
 " PURPOSE:
 "	Notify the runner that the next test is supposed to fail
 " ARGUMENTS:
@@ -299,7 +299,7 @@ endfunction
 " RETURNS:
 "	
 " -----------------------------------------
-function! unitTest.VURunnerExpectFailure(caller,...) dict  "{{{2
+function! unitTest.ExpectFailure(caller,...) dict  "{{{2
 	"TODO: Add msg trace
 	let self.testRunExpectedFailuresCount = self.testRunExpectedFailuresCount + 1
 endfunction
@@ -348,10 +348,10 @@ if s:vimUnitAutoRun == 0
 " 	let sFoo = <SID>ExtractFunctionName(<SID>GetCurrentFunctionName())
 " 	if match(sFoo,'^Test') > -1 
 " 		"We found the function name and it starts with Test so we source the
-" 		"file and self.VURunnerRunTest to run the test
+" 		"file and self.RunTests to run the test
 " 		exe "w|so %"
 " 		if exists( '*'.sFoo)
-" 			self.VURunnerRunTest(sFoo)
+" 			self.RunTests(sFoo)
 " 		else
 " 			call confirm ("ERROR: VUAutoRunner. Function name: ".sFoo." Could not be found by function exists(".sFoo.")")
 " 		endif
@@ -368,104 +368,104 @@ endif
 let s:selfTest = copy(unitTest)
 let s:selfTest.name = "VimUnitSelfTestSuite"
 
-" SelfTest VUAssert {{{1
-function! s:selfTest.TestVUAssertEquals() dict  "{{{2
-	let sSelf = 'TestVUAssertEquals'
-	call self.VUAssertEquals(1,1,'Simple test comparing numbers')
-	call self.VURunnerExpectFailure(sSelf,'AssertEquals(1,2,"")')
-	call self.VUAssertEquals(1,2,'Simple test comparing numbers,expect failure')
+" SelfTest Assert {{{1
+function! s:selfTest.TestAssertEquals() dict  "{{{2
+	let sSelf = 'TestAssertEquals'
+	call self.AssertEquals(1,1,'Simple test comparing numbers')
+	call self.ExpectFailure(sSelf,'AssertEquals(1,2,"")')
+	call self.AssertEquals(1,2,'Simple test comparing numbers,expect failure')
 
-	call self.VUAssertEquals('str1','str1','Simple test comparing two strings')
-	call self.VUAssertEquals('str1',"str1",'Simple test comparing two strings')
-	call self.VURunnerExpectFailure(sSelf,"AssertEquals(\'str1\',\"str1\",\"\")")
-	call self.VUAssertEquals('str1','str2','Simple test comparing two diffrent strings,expect failure')	
+	call self.AssertEquals('str1','str1','Simple test comparing two strings')
+	call self.AssertEquals('str1',"str1",'Simple test comparing two strings')
+	call self.ExpectFailure(sSelf,"AssertEquals(\'str1\',\"str1\",\"\")")
+	call self.AssertEquals('str1','str2','Simple test comparing two diffrent strings,expect failure')	
 
-	call self.VUAssertEquals(123,'123','Simple test comparing number and string containing number')
-	call self.VURunnerExpectFailure(sSelf,"AssertEquals(123,'321',\"\")")
-	call self.VUAssertEquals(123,'321','Simple test comparing number and string containing diffrent number,expect failure')
+	call self.AssertEquals(123,'123','Simple test comparing number and string containing number')
+	call self.ExpectFailure(sSelf,"AssertEquals(123,'321',\"\")")
+	call self.AssertEquals(123,'321','Simple test comparing number and string containing diffrent number,expect failure')
 	
 	let arg1 = 1
 	let arg2 = 1
-	call self.VUAssertEquals(arg1,arg2,'Simple test comparing two variables containing the same number')
+	call self.AssertEquals(arg1,arg2,'Simple test comparing two variables containing the same number')
 	let arg2 = 2
-	call self.VURunnerExpectFailure(sSelf,'AssertEquals(arg1=1,arg2=2,"")')
-	call self.VUAssertEquals(arg1,arg2,'Simple test comparing two variables containing diffrent numbers,expect failure')
+	call self.ExpectFailure(sSelf,'AssertEquals(arg1=1,arg2=2,"")')
+	call self.AssertEquals(arg1,arg2,'Simple test comparing two variables containing diffrent numbers,expect failure')
 
 	let arg1 = "test1"
 	let arg2 = "test1"
-	call self.VUAssertEquals(arg1,arg2,'Simple test comparing two variables containing equal strings')
+	call self.AssertEquals(arg1,arg2,'Simple test comparing two variables containing equal strings')
 	let arg2 = "test2"
-	call self.VURunnerExpectFailure(sSelf,'AssertEquals(arg1=test1,arg2=test2,"")')
-	call self.VUAssertEquals(arg1,arg2,'Simple test comparing two variables containing diffrent strings,expect failure')
+	call self.ExpectFailure(sSelf,'AssertEquals(arg1=test1,arg2=test2,"")')
+	call self.AssertEquals(arg1,arg2,'Simple test comparing two variables containing diffrent strings,expect failure')
 
-"	self.VUAssertEquals(%%%,%%%,"Simple test comparing %%%')
-"	self.VURunnerExpectFailure(sSelf,'AssertEquals(%%%,%%%,"")')
-"	self.VUAssertEquals(%%%,%%%,"Simple test comparing %%%,expect failure')
+"	self.AssertEquals(%%%,%%%,"Simple test comparing %%%')
+"	self.ExpectFailure(sSelf,'AssertEquals(%%%,%%%,"")')
+"	self.AssertEquals(%%%,%%%,"Simple test comparing %%%,expect failure')
 endfunction
 
-function! s:selfTest.TestVUAssertTrue() dict  "{{{2
-	let sSelf = 'TestVUAssertTrue'
-	call self.VUAssertTrue(TRUE(),'Simple test Passing function TRUE()')
-	call self.VURunnerExpectFailure(sSelf,'AssertTrue(FALSE(),"")')
-	call self.VUAssertTrue(FALSE(), 'Simple test Passing FALSE(),expect failure')	
+function! s:selfTest.TestAssertTrue() dict  "{{{2
+	let sSelf = 'TestAssertTrue'
+	call self.AssertTrue(TRUE(),'Simple test Passing function TRUE()')
+	call self.ExpectFailure(sSelf,'AssertTrue(FALSE(),"")')
+	call self.AssertTrue(FALSE(), 'Simple test Passing FALSE(),expect failure')	
 
-	call self.VUAssertTrue(1,'Simple test passing 1')
-	call self.VURunnerExpectFailure(sSelf,'AssertTrue(0,"")')
-	call self.VUAssertTrue(0, 'Simple test passing 0,expect failure')	
+	call self.AssertTrue(1,'Simple test passing 1')
+	call self.ExpectFailure(sSelf,'AssertTrue(0,"")')
+	call self.AssertTrue(0, 'Simple test passing 0,expect failure')	
 
 	let arg1 = 1
-	call self.VUAssertTrue(arg1,'Simple test arg1 = 1')
-	call self.VURunnerExpectFailure(sSelf,'AssertTrue(arg1=0,"")')
+	call self.AssertTrue(arg1,'Simple test arg1 = 1')
+	call self.ExpectFailure(sSelf,'AssertTrue(arg1=0,"")')
 	let arg1 = 0
-	call self.VUAssertTrue(arg1, 'Simple test passing arg1=0,expect failure')		
+	call self.AssertTrue(arg1, 'Simple test passing arg1=0,expect failure')		
 
 	
-	call self.VURunnerExpectFailure(sSelf,'AssertTrue("test","")')
-	call self.VUAssertTrue("test",'Simple test passing string')
-	call self.VURunnerExpectFailure(sSelf,'AssertTrue("","")')
-	call self.VUAssertTrue("", 'Simple test passing empty string,expect failure')	
+	call self.ExpectFailure(sSelf,'AssertTrue("test","")')
+	call self.AssertTrue("test",'Simple test passing string')
+	call self.ExpectFailure(sSelf,'AssertTrue("","")')
+	call self.AssertTrue("", 'Simple test passing empty string,expect failure')	
 
-	call self.VURunnerExpectFailure(sSelf,'AssertTrue(arg1="test","")')
+	call self.ExpectFailure(sSelf,'AssertTrue(arg1="test","")')
 	let arg1 = 'test'
-	call self.VUAssertTrue(arg1,'Simple test passing arg1 = test')
-	call self.VURunnerExpectFailure(sSelf,'AssertTrue(arg1="","")')
-	call self.VUAssertTrue(arg1, 'Simple test passing arg1="",expect failure')	
+	call self.AssertTrue(arg1,'Simple test passing arg1 = test')
+	call self.ExpectFailure(sSelf,'AssertTrue(arg1="","")')
+	call self.AssertTrue(arg1, 'Simple test passing arg1="",expect failure')	
 
-"	self.VUAssertTrue(%%%,'Simple test %%%')
-"	self.VURunnerExpectFailure(sSelf,'AssertTrue(%%%,"")')
-"	self.VUAssertTrue(%%%, 'Simple test %%%,expect failure')		
+"	self.AssertTrue(%%%,'Simple test %%%')
+"	self.ExpectFailure(sSelf,'AssertTrue(%%%,"")')
+"	self.AssertTrue(%%%, 'Simple test %%%,expect failure')		
 	
 endfunction
 
-function! s:selfTest.TestVUAssertFalse() dict  "{{{2
-	let sSelf = 'TestVUAssertFalse'
-	call self.VUAssertFalse(FALSE(), 'Simple test Passing FALSE()')	
-	call self.VURunnerExpectFailure(sSelf,'AssertFalse(TRUE(),"")')
-	call self.VUAssertFalse(TRUE(),'Simple test Passing function TRUE(),expect failure')	
+function! s:selfTest.TestAssertFalse() dict  "{{{2
+	let sSelf = 'TestAssertFalse'
+	call self.AssertFalse(FALSE(), 'Simple test Passing FALSE()')	
+	call self.ExpectFailure(sSelf,'AssertFalse(TRUE(),"")')
+	call self.AssertFalse(TRUE(),'Simple test Passing function TRUE(),expect failure')	
 
-	call self.VUAssertFalse(0,'Simple test passing 0')
-	call self.VURunnerExpectFailure(sSelf,'AssertFalse(1,"")')
-	call self.VUAssertFalse(1, 'Simple test passing 1,expect failure')	
+	call self.AssertFalse(0,'Simple test passing 0')
+	call self.ExpectFailure(sSelf,'AssertFalse(1,"")')
+	call self.AssertFalse(1, 'Simple test passing 1,expect failure')	
 
 	let arg1 = 0
-	call self.VUAssertFalse(arg1,'Simple test arg1 = 0')
-	call self.VURunnerExpectFailure(sSelf,'AssertFalse(arg1=1,"")')
+	call self.AssertFalse(arg1,'Simple test arg1 = 0')
+	call self.ExpectFailure(sSelf,'AssertFalse(arg1=1,"")')
 	let arg1 = 1
-	call self.VUAssertFalse(arg1, 'Simple test passing arg1=1,expect failure')		
+	call self.AssertFalse(arg1, 'Simple test passing arg1=1,expect failure')		
 
-	call self.VURunnerExpectFailure(sSelf,'AssertFalse("test","")')
-	call self.VUAssertFalse("test",'Simple test passing string')
-	call self.VURunnerExpectFailure(sSelf,'AssertFalse("","")')
-	call self.VUAssertFalse("", 'Simple test passing empty string,expect failure')	
+	call self.ExpectFailure(sSelf,'AssertFalse("test","")')
+	call self.AssertFalse("test",'Simple test passing string')
+	call self.ExpectFailure(sSelf,'AssertFalse("","")')
+	call self.AssertFalse("", 'Simple test passing empty string,expect failure')	
 
-	call self.VURunnerExpectFailure(sSelf,'AssertFalse(arg1="test","")')
+	call self.ExpectFailure(sSelf,'AssertFalse(arg1="test","")')
 	let arg1 = 'test'
-	call self.VUAssertFalse(arg1,'Simple test passing arg1 = test')
-	call self.VURunnerExpectFailure(sSelf,'AssertFalse(arg1="","")')
-	call self.VUAssertFalse(arg1, 'Simple test passing arg1="",expect failure')	
+	call self.AssertFalse(arg1,'Simple test passing arg1 = test')
+	call self.ExpectFailure(sSelf,'AssertFalse(arg1="","")')
+	call self.AssertFalse(arg1, 'Simple test passing arg1="",expect failure')	
 	
 endfunction
-function! s:selfTest.TestVUAssertNotNull() dict "{{{2
+function! s:selfTest.TestAssertNotNull() dict "{{{2
 	"NOTE: I do not think we will have a situation in a vim-script where we
 	"can pass a variable containing a null as I understand it that is a 
 	"uninitiated variable. 
@@ -475,31 +475,31 @@ function! s:selfTest.TestVUAssertNotNull() dict "{{{2
 	"BUT: We can have situations where we try to do this. Especeialy if we are
 	"using on-the-fly variable names. :help curly-braces-names
 	"
-	let sSelf = 'TestVUAssertNotNull'
-	call self.VURunnerExpectFailure(sSelf,'Trying to pass a unlet variable')
+	let sSelf = 'TestAssertNotNull'
+	call self.ExpectFailure(sSelf,'Trying to pass a unlet variable')
 	try
 		let sTest = ""
 		unlet sTest
-		call self.VUAssertNotNull(sTest,'Trying to pass a uninitiated variable')
+		call self.AssertNotNull(sTest,'Trying to pass a uninitiated variable')
 	catch
-		call self.VUAssertFail('Trying to pass a uninitiated variable')
+		call self.AssertFail('Trying to pass a uninitiated variable')
 	endtry
 	
-	call self.VURunnerExpectFailure(sSelf,'Trying to pass a uninitiated variable')
+	call self.ExpectFailure(sSelf,'Trying to pass a uninitiated variable')
 	try
-		call self.VUAssertNotNull(sTest2,'Trying to pass a uninitated variable sTest2')	
+		call self.AssertNotNull(sTest2,'Trying to pass a uninitated variable sTest2')	
 	catch
-		call self.VUAssertFail('Trying to pass a uninitated variable sTest2')
+		call self.AssertFail('Trying to pass a uninitated variable sTest2')
 	endtry
 	
 endfunction
 
 
 
-function! s:selfTest.TestVUAssertFail() dict  "{{{2
+function! s:selfTest.TestAssertFail() dict  "{{{2
 	let sSelf = 'testAssertFail'
-	call self.VURunnerExpectFailure(sSelf,'Calling VUAssertFail()')
-	call self.VUAssertFail('Expected failure')
+	call self.ExpectFailure(sSelf,'Calling AssertFail()')
+	call self.AssertFail('Expected failure')
 endfunction
 
 
@@ -507,16 +507,16 @@ function! s:selfTest.TestExtractFunctionName() dict "{{{1
 	let sSelf = 'TestExtractFunctionName'
 	"Testing leagal function declarations
 	"NOTE: The markers in the test creates a bit of cunfusion
-	let sFoo = self.VUAssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction()'),'straight function declaration')
-	let sFoo = self.VUAssertEquals('TestFunction',<SID>ExtractFunctionName('func! TestFunction()'),'func with !')
-	let sFoo = self.VUAssertEquals('TestFunction',<SID>ExtractFunctionName(' func TestFunction()'),'space before func')
-	let sFoo = self.VUAssertEquals('TestFunction',<SID>ExtractFunctionName('		func TestFunction()'),'Two embeded tabs before func') "Two embeded tabs
-	let sFoo = self.VUAssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction()	"{{{3'),'Declaration with folding marker in comment' )
-	let sFoo = self.VUAssertEquals('TestFunction',<SID>ExtractFunctionName('   func TestFunction()	"{{{3'),'Declaration starting with space and ending with commented folding marker')
-	let sFoo = self.VUAssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction(arg1, funcarg1, ..)'),'arguments contain func')
+	let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction()'),'straight function declaration')
+	let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func! TestFunction()'),'func with !')
+	let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName(' func TestFunction()'),'space before func')
+	let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('		func TestFunction()'),'Two embeded tabs before func') "Two embeded tabs
+	let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction()	"{{{3'),'Declaration with folding marker in comment' )
+	let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('   func TestFunction()	"{{{3'),'Declaration starting with space and ending with commented folding marker')
+	let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction(arg1, funcarg1, ..)'),'arguments contain func')
 endfunction	"}}}
 
-" call s:selfTest.VURunnerRunTest()
+" call s:selfTest.RunTests()
 
 
 " Help (Documentation) installation {{{1
@@ -651,13 +651,13 @@ endfunction
   silent! let s:help_install_status =
       \ <SID>InstallDocumentation(expand('<sfile>:p'), s:revision)
   if (s:help_install_status == 1) 
-	  call s:selfTest.VURunnerRunTest()
+	  call s:selfTest.RunTests()
       echom expand("<sfile>:t:r") . ' v' . s:revision .
 		\ ': Help-documentation installed.'
   endif
 
 	if (g:vimUnitSelfTest == 1)
-	  call s:selfTest.VURunnerRunTest()
+	  call s:selfTest.RunTests()
       echo "Should run test here"
 	endif	
 
@@ -710,7 +710,7 @@ CONTENT  {{{2                                                *vimUnit-contents*
 	So placing the cursor on call (in a vim file) inside the function:
 	
 		function! TestThis()
-			self.VUAssertTrue(TRUE(),'Simple test of true')	
+			self.AssertTrue(TRUE(),'Simple test of true')	
 		endfunction
 		
 	And calling:
@@ -756,11 +756,11 @@ CONTENT  {{{2                                                *vimUnit-contents*
 	Ex:
 		"First we have an ide of how our function Cube should work
 		func! TestCaseCube()
-			self.VUAssertEquals(<SID>Cube(1),1,'Trying to cube 1)')
-			self.VUAssertEquals(<SID>Cube(2),2*2*2,'Trying to cube 2)')
-			self.VUAssertEquals(<SID>Cube(3),3*3*3,'Trying to cube 3)')
+			self.AssertEquals(<SID>Cube(1),1,'Trying to cube 1)')
+			self.AssertEquals(<SID>Cube(2),2*2*2,'Trying to cube 2)')
+			self.AssertEquals(<SID>Cube(3),3*3*3,'Trying to cube 3)')
 			"Take a look at the statistics
-			self.VURunnerPrintStatistics()
+			self.PrintStatistics()
 		endfunc
 		"We write ouer Cube Function
 		func! <SID>Cube(arg1)
@@ -777,7 +777,7 @@ CONTENT  {{{2                                                *vimUnit-contents*
 	That's it If we get errors we must investigate. We should make test's 
 	discovering how our function handels obvious error conditions. How about
 	adding this line to our TestCase:
-		self.VUAssertEquals(<SID>Cube('tre'),3*3*3,'Trying to pass a string')
+		self.AssertEquals(<SID>Cube('tre'),3*3*3,'Trying to pass a string')
 		
 	Do we get a nice error message or does our script grind to a halt?
 	Should we add a test in Cube that ensure valide arguments?
@@ -799,20 +799,20 @@ CONTENT  {{{2                                                *vimUnit-contents*
 	When you se ... at the end of the argument list you may optionaly provide 
 	a message string.
 	
-	VUAssertEquals(ar1, arg2, ...)
+	AssertEquals(ar1, arg2, ...)
 		VUAssert that arg1 is euqal in content to arg2.
-	VUAssertTrue(arg1, ...)
+	AssertTrue(arg1, ...)
 		VUAssert that arg1 is true.
-	VUAssertFalse(arg1, ...)
+	AssertFalse(arg1, ...)
 		VUAssert that arg1 is false.
-	VUAssertNotNull(arg1, ...)
+	AssertNotNull(arg1, ...)
 		VUAssert that arg1 is initiated.
-	VUAssertFail(...)
+	AssertFail(...)
 		Log a userdefined failure.
 		
 
 
-	VURunnerInit()
+	RunnerInit()
 		TODO:
 	VURunnerStartSuite(caller)
 		TODO:
