@@ -107,7 +107,7 @@ if !exists('g:vimUnitSelfTest')
 "   1 ==> Always run self test when loaded
 "   0 ==> Do not run self test when loaded. SelfTest will however run if the
 "   file is modified since the documentation was installed.
-    let g:vimUnitSelfTest = 1
+    let g:vimUnitSelfTest = 0
 endif
 
 if !exists('g:vimUnitVerbosity')
