@@ -163,7 +163,7 @@ function! UnitTest.AssertEquals(arg1, arg2, ...) dict	"{{{2
 	else
 		let self.testRunFailureCount = self.testRunFailureCount + 1
 		let bFoo = FALSE()
-		call <SID>MsgSink('AssertEquals','arg1='.a:arg1.'!='.a:arg2)
+		call <SID>MsgSink('FAILED: AssertEquals','arg1='.a:arg1.'!='.a:arg2.' MSG:'.a:1)
 	endif
 	return bFoo
 endfunction
@@ -187,7 +187,7 @@ function! UnitTest.AssertNotEquals(arg1, arg2, ...) dict	"{{{2
 	else
 		let self.testRunFailureCount = self.testRunFailureCount + 1
 		let bFoo = FALSE()
-		call <SID>MsgSink('AssertNotEquals','arg1='.a:arg1.'=='.a:arg2)
+		call <SID>MsgSink('FAILED: AssertNotEquals','arg1='.a:arg1.'=='.a:arg2.' MSG: '.a:1)
 	endif
 	return bFoo
 endfunction
@@ -326,7 +326,7 @@ function! UnitTest.AssertNotNull(arg1, ...) dict	"{{{2
 	else
 		let self.testRunFailureCount = self.testRunFailureCount + 1
 		let bFoo = FALSE()
-		call <SID>MsgSink('AssertNotNull','arg1: Does not exist')
+		call <SID>MsgSink('FAILED: AssertNotNull','arg1: Does not exist')
 	endif	
 	return bFoo		
 endfunction
@@ -335,14 +335,23 @@ endfunction
 function! UnitTest.AssertFail(...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1	
 	let self.testRunFailureCount = self.testRunFailureCount + 1
-	call <SID>MsgSink('AssertFail','')
+	call <SID>MsgSink('FAILED: AssertFail','')
 	return FALSE()	
 endfunction
 
 " VURunner {{{1
+" ----------------------------------------- {{{2
+" FUNCTION:	RunTests
+" PURPOSE:
+"	Run tests contained in the current object
+" ARGUMENTS:
+"	None
+" RETURNS:
+"	None
+" -----------------------------------------
 function! UnitTest.RunTests() dict
 		call self.RunnerInit()
-		echo "Running: ".self.name
+		echomsg "Running: ".self.name
         for key in keys(self)
             if strpart(key, 0, 4) == 'Test' && type(self[key]) == type(function("tr"))
                 call self[key]()
@@ -350,6 +359,7 @@ function! UnitTest.RunTests() dict
         endfor
 		call self.PrintStatistics(self.name)	
 endfunction
+
 " ----------------------------------------- {{{2
 " FUNCTION:	PrintStatistics
 " PURPOSE:
@@ -359,7 +369,7 @@ endfunction
 " RETURNS:
 "	String containing statistics
 " -----------------------------------------
-function! UnitTest.PrintStatistics(caller,...) dict "{{{2
+function! UnitTest.PrintStatistics(caller,...) dict
 	if exists('a:caller')
 		let sFoo = "----- ".a:caller."---------------------------------------------\n"
 	else
@@ -375,7 +385,16 @@ function! UnitTest.PrintStatistics(caller,...) dict "{{{2
 	return sFoo
 endfunction
 
-function! UnitTest.RunnerInit() dict	"{{{2
+" ----------------------------------------- {{{2
+" FUNCTION:	RunnerInit
+" PURPOSE:
+"	Reset statistics to zero
+" ARGUMENTS:
+"	None
+" RETURNS:
+"	None
+" -----------------------------------------
+function! UnitTest.RunnerInit() dict
     echomsg "CLEARING: statistics"
 	let self.testRunCount = 0
 	let self.testRunFailureCount = 0
