@@ -340,8 +340,8 @@ function! UnitTest.AssertFail(...) dict "{{{2
 endfunction
 
 " VURunner {{{1
-" ----------------------------------------- {{{2
-" FUNCTION: RunTests
+" -----------------------------------------
+" FUNCTION: RunTests {{{2
 " PURPOSE:
 "   Run tests contained in the current object
 " ARGUMENTS:
@@ -354,14 +354,19 @@ function! UnitTest.RunTests() dict
         echomsg "Running: ".self.name
         for key in keys(self)
             if strpart(key, 0, 4) == 'Test' && type(self[key]) == type(function("tr"))
-                call self[key]()
+                try
+                    call self[key]()
+                catch
+                    let message = "ERROR. Exception: ".v:exception." in ".v:throwpoint
+                    call <SID>MsgSink(key, message)
+                endtry
             endif
         endfor
         call self.PrintStatistics(self.name)
 endfunction
 
-" ----------------------------------------- {{{2
-" FUNCTION: PrintStatistics
+" -----------------------------------------
+" FUNCTION: PrintStatistics {{{2
 " PURPOSE:
 "   Print statistics about test's
 " ARGUMENTS:
@@ -385,8 +390,8 @@ function! UnitTest.PrintStatistics(caller,...) dict
     return sFoo
 endfunction
 
-" ----------------------------------------- {{{2
-" FUNCTION: RunnerInit
+" -----------------------------------------
+" FUNCTION: RunnerInit {{{2
 " PURPOSE:
 "   Reset statistics to zero
 " ARGUMENTS:
