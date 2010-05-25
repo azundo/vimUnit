@@ -168,6 +168,30 @@ function! unitTest.AssertEquals(arg1, arg2, ...) dict	"{{{2
 	return bFoo
 endfunction
 " ---------------------------------------------------------------------
+" FUNCTION:	AssertNotEquals
+" PURPOSE:
+"	Compare arguments
+" ARGUMENTS:
+" 	arg1 : Argument to be tested.
+" 	arg2 : Argument to test against.
+"	...  : Optional message.
+" RETURNS:
+"	1 if arg1 == arg2
+"	0 if arg1 != arg2
+" ---------------------------------------------------------------------
+function! unitTest.AssertNotEquals(arg1, arg2, ...) dict	"{{{2
+	let self.testRunCount = self.testRunCount + 1
+	if a:arg1 != a:arg2
+		let self.testRunSuccessCount = self.testRunSuccessCount + 1
+		let bFoo = TRUE()
+	else
+		let self.testRunFailureCount = self.testRunFailureCount + 1
+		let bFoo = FALSE()
+		call <SID>MsgSink('AssertNotEquals','arg1='.a:arg1.'=='.a:arg2)
+	endif
+	return bFoo
+endfunction
+" ---------------------------------------------------------------------
 " FUNCTION:	AssertTrue
 " PURPOSE:
 " 	Check that the passed argument validates to true
