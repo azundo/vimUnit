@@ -261,14 +261,49 @@ endfunction
 " ---------------------------------------------------------------------
 function! UnitTest.AssertFalse(arg1, ...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1
-	if a:arg1 == FALSE()
+    let bFoo = FALSE()
+    let arg_type = type(a:arg1)
+    let arg_as_string = ""
+    if arg_type == type(0)
+        if a:arg1 == FALSE()
+		    let bFoo = TRUE()
+        else
+		    let bFoo = FALSE()
+        endif
+    elseif arg_type == type([])
+        if a:arg1 == []
+            let bFoo = TRUE()
+        else
+            let bFoo = FALSE()
+        endif
+    elseif arg_type == type({})
+        if a:arg1 == {}
+            let bFoo = TRUE()
+        else
+            let bFoo = FALSE()
+        endif
+    elseif arg_type == type("")
+        if a:arg1 == ""
+            let bFoo = TRUE()
+        else
+            let bFoo = FALSE()
+        endif
+    elseif arg_type == type(0.0)
+        if a:arg1 == 0.0
+            let bFoo = TRUE()
+        else
+            let bFoo = FALSE()
+        endif
+    endif
+
+    if bFoo == TRUE()
 		let self.testRunSuccessCount = self.testRunSuccessCount + 1
-		let bFoo = TRUE()
-	else
+    else
 		let self.testRunFailureCount = self.testRunFailureCount + 1
-		let bFoo = FALSE()
-		call <SID>MsgSink('AssertFalse','arg1='.a:arg1.'!='.FALSE())
-	endif	
+		"TODO: What if a:1 does not exists?
+		call <SID>MsgSink('FAILED: AssertFalse','arg1='.string(a:arg1).'!=FALSE MSG: '.a:1)
+    endif
+
 	return bFoo
 endfunction
 
@@ -461,6 +496,39 @@ function! s:SelfTest.TestAssertEquals() dict  "{{{2
 "	self.AssertEquals(%%%,%%%,"Simple test comparing %%%,expect failure')
 endfunction
 
+function! s:SelfTest.TestAssertNotEquals() dict  "{{{2
+	let sSelf = 'TestAssertNotEquals'
+	call self.AssertNotEquals(1,2,'Simple test comparing numbers,expect failure')
+	call self.ExpectFailure(sSelf,'AssertNotEquals(1,1,"")')
+	call self.AssertNotEquals(1,1,'Simple test comparing numbers,expect failure')
+
+	call self.AssertNotEquals('str1','str2','Simple test comparing two diffrent strings')	
+	call self.ExpectFailure(sSelf,"AssertNotEquals(\'str1\',\"str1\",\"\")")
+	call self.AssertNotEquals('str1',"str1",'Simple test comparing two strings,expect failure')
+
+	call self.AssertNotEquals(123,'321','Simple test comparing number and string containing diffrent number')
+	call self.ExpectFailure(sSelf,"AssertNotEquals(123,'123',\"\")")
+	call self.AssertNotEquals(123,'123','Simple test comparing number and string containing number,expect failure')
+	
+	let arg1 = 1
+	let arg2 = 2
+	call self.AssertNotEquals(arg1,arg2,'Simple test comparing two variables containing diffrent numbers')
+	call self.ExpectFailure(sSelf,'AssertNotEquals(arg1=1,arg2=1,"")')
+	let arg2 = 1
+	call self.AssertNotEquals(arg1,arg2,'Simple test comparing two variables containing the same number,expect failure')
+
+	let arg1 = "test1"
+	let arg2 = "test2"
+	call self.AssertNotEquals(arg1,arg2,'Simple test comparing two variables containing diffrent strings')
+	let arg2 = "test1"
+	call self.AssertNotEquals(arg1,arg2,'Simple test comparing two variables containing equal strings,expect failure')
+	call self.ExpectFailure(sSelf,'AssertNotEquals(arg1=test1,arg2=test1,"")')
+
+"	self.AssertEquals(%%%,%%%,"Simple test comparing %%%')
+"	self.ExpectFailure(sSelf,'AssertEquals(%%%,%%%,"")')
+"	self.AssertEquals(%%%,%%%,"Simple test comparing %%%,expect failure')
+endfunction
+
 function! s:SelfTest.TestAssertTrue() dict  "{{{2
 	let sSelf = 'TestAssertTrue'
 	call self.AssertTrue(TRUE(),'Simple test Passing function TRUE()')
@@ -505,26 +573,26 @@ endfunction
 function! s:SelfTest.TestAssertFalse() dict  "{{{2
 	let sSelf = 'TestAssertFalse'
 	call self.AssertFalse(FALSE(), 'Simple test Passing FALSE()')	
-	" call self.ExpectFailure(sSelf,'AssertFalse(TRUE(),"")')
-	" call self.AssertFalse(TRUE(),'Simple test Passing function TRUE(),expect failure')	
+	call self.ExpectFailure(sSelf,'AssertFalse(TRUE(),"")')
+	call self.AssertFalse(TRUE(),'Simple test Passing function TRUE(),expect failure')	
 
 	call self.AssertFalse(0,'Simple test passing 0')
-	" call self.ExpectFailure(sSelf,'AssertFalse(1,"")')
-	" call self.AssertFalse(1, 'Simple test passing 1,expect failure')	
+	call self.ExpectFailure(sSelf,'AssertFalse(1,"")')
+	call self.AssertFalse(1, 'Simple test passing 1,expect failure')	
 
 	let arg1 = 0
 	call self.AssertFalse(arg1,'Simple test arg1 = 0')
-	" call self.ExpectFailure(sSelf,'AssertFalse(arg1=1,"")')
-	" let arg1 = 1
-	" call self.AssertFalse(arg1, 'Simple test passing arg1=1,expect failure')		
+	call self.ExpectFailure(sSelf,'AssertFalse(arg1=1,"")')
+	let arg1 = 1
+	call self.AssertFalse(arg1, 'Simple test passing arg1=1,expect failure')		
 
-	" call self.ExpectFailure(sSelf,'AssertFalse("test","")')
-	" call self.AssertFalse("test",'Simple test passing string')
+	call self.ExpectFailure(sSelf,'AssertFalse("test","")')
+	call self.AssertFalse("test",'Simple test passing string, expect failure')
 	call self.AssertFalse("", 'Simple test passing empty string, should pass')	
 
-	" call self.ExpectFailure(sSelf,'AssertFalse(arg1="test","")')
-	" let arg1 = 'test'
-	call self.AssertFalse(arg1,'Simple test passing arg1 = test')
+	call self.ExpectFailure(sSelf,'AssertFalse(arg1="test","")')
+	let arg1 = 'test'
+	call self.AssertFalse(arg1,'Simple test passing arg1 = test, expect failure')
     let arg1 = ""
 	call self.AssertFalse(arg1, 'Simple test passing arg1="", should pass')	
 	
