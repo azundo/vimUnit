@@ -107,7 +107,7 @@ if !exists('g:vimUnitSelfTest')
 "	1 ==> Always run self test when loaded
 "	0 ==> Do not run self test when loaded. SelfTest will however run if the
 "	file is modified since the documentation was installed.
-	let g:vimUnitSelfTest = 0
+	let g:vimUnitSelfTest = 1
 endif
 
 if !exists('g:vimUnitVerbosity')
@@ -116,13 +116,13 @@ if !exists('g:vimUnitVerbosity')
 endif
 
 "   Main UnitTest object definition{{{2
-if !exists('unitTest')
-    let unitTest = {}
-    let unitTest.testRunCount = 0
-    let unitTest.testRunSuccessCount = 0
-	let unitTest.testRunFailureCount = 0
-	let unitTest.testRunExpectedFailuresCount = 0
-    let unitTest.name = 'OVERWRITE ME'
+if !exists('UnitTest')
+    let UnitTest = {}
+    let UnitTest.testRunCount = 0
+    let UnitTest.testRunSuccessCount = 0
+	let UnitTest.testRunFailureCount = 0
+	let UnitTest.testRunExpectedFailuresCount = 0
+    let UnitTest.name = 'OVERWRITE ME'
 endif
 
 
@@ -138,7 +138,7 @@ endif
 " RETURNS:
 "	false
 " -----------------------------------------
-function! unitTest.TODO(funcName) dict	"{{{2 
+function! UnitTest.TODO(funcName) dict	"{{{2 
 	echomsg '[TODO] '.a:funcName
 	return FALSE()
 endfunction
@@ -155,7 +155,7 @@ endfunction
 "	0 if arg1 == arg2
 "	1 if arg1 != arg2
 " ---------------------------------------------------------------------
-function! unitTest.AssertEquals(arg1, arg2, ...) dict	"{{{2
+function! UnitTest.AssertEquals(arg1, arg2, ...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1
 	if a:arg1 == a:arg2
 		let self.testRunSuccessCount = self.testRunSuccessCount + 1
@@ -179,7 +179,7 @@ endfunction
 "	1 if arg1 == arg2
 "	0 if arg1 != arg2
 " ---------------------------------------------------------------------
-function! unitTest.AssertNotEquals(arg1, arg2, ...) dict	"{{{2
+function! UnitTest.AssertNotEquals(arg1, arg2, ...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1
 	if a:arg1 != a:arg2
 		let self.testRunSuccessCount = self.testRunSuccessCount + 1
@@ -202,17 +202,51 @@ endfunction
 " 	TRUE() if true and
 " 	FALSE() if false
 " ---------------------------------------------------------------------
-function! unitTest.AssertTrue(arg1, ...) dict	"{{{2
+function! UnitTest.AssertTrue(arg1, ...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1
-	if a:arg1 == TRUE()
+    let bFoo = FALSE()
+    let arg_type = type(a:arg1)
+    let arg_as_string = ""
+    if arg_type == type(0)
+        if a:arg1 == TRUE()
+		    let bFoo = TRUE()
+        else
+		    let bFoo = FALSE()
+        endif
+    elseif arg_type == type([])
+        if a:arg1 == []
+            let bFoo = FALSE()
+        else
+            let bFoo = TRUE()
+        endif
+    elseif arg_type == type({})
+        if a:arg1 == {}
+            let bFoo = FALSE()
+        else
+            let bFoo = TRUE()
+        endif
+    elseif arg_type == type("")
+        if a:arg1 == ""
+            let bFoo = FALSE()
+        else
+            let bFoo = TRUE()
+        endif
+    elseif arg_type == type(0.0)
+        if a:arg1 == 0.0
+            let bFoo = FALSE()
+        else
+            let bFoo = TRUE()
+        endif
+    endif
+
+    if bFoo == TRUE()
 		let self.testRunSuccessCount = self.testRunSuccessCount + 1
-		let bFoo = TRUE()
-	else
+    else
 		let self.testRunFailureCount = self.testRunFailureCount + 1
-		let bFoo = FALSE()
 		"TODO: What if a:1 does not exists?
-		call <SID>MsgSink('FAILED: AssertTrue','arg1='.a:arg1.'!='.TRUE()." MSG: ".a:1)
-	endif	
+		call <SID>MsgSink('FAILED: AssertTrue','arg1='.string(a:arg1).'!=TRUE MSG: '.a:1)
+    endif
+
 	return bFoo
 endfunction
 " ---------------------------------------------------------------------
@@ -225,7 +259,7 @@ endfunction
 "	0 if true
 "	1 if false
 " ---------------------------------------------------------------------
-function! unitTest.AssertFalse(arg1, ...) dict	"{{{2
+function! UnitTest.AssertFalse(arg1, ...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1
 	if a:arg1 == FALSE()
 		let self.testRunSuccessCount = self.testRunSuccessCount + 1
@@ -240,7 +274,7 @@ endfunction
 
 " VUAssert that the arg1 is initialized (is not null)
 " Is this situation possible in vim script?
-function! unitTest.AssertNotNull(arg1, ...) dict	"{{{2	
+function! UnitTest.AssertNotNull(arg1, ...) dict	"{{{2	
 	"NOTE: I do not think we will have a situation in a vim-script where we
 	"can pass a variable containing a null as I understand it that is a 
 	"uninitiated variable. 
@@ -263,7 +297,7 @@ function! unitTest.AssertNotNull(arg1, ...) dict	"{{{2
 endfunction
 
 "Fail a test with no arguments
-function! unitTest.AssertFail(...) dict	"{{{2
+function! UnitTest.AssertFail(...) dict	"{{{2
 	let self.testRunCount = self.testRunCount + 1	
 	let self.testRunFailureCount = self.testRunFailureCount + 1
 	call <SID>MsgSink('AssertFail','')
@@ -271,7 +305,7 @@ function! unitTest.AssertFail(...) dict	"{{{2
 endfunction
 
 " VURunner {{{1
-function! unitTest.RunTests() dict
+function! UnitTest.RunTests() dict
 		call self.RunnerInit()
 		echo "Running: ".self.name
         for key in keys(self)
@@ -290,7 +324,7 @@ endfunction
 " RETURNS:
 "	String containing statistics
 " -----------------------------------------
-function! unitTest.PrintStatistics(caller,...) dict "{{{2
+function! UnitTest.PrintStatistics(caller,...) dict "{{{2
 	if exists('a:caller')
 		let sFoo = "----- ".a:caller."---------------------------------------------\n"
 	else
@@ -306,7 +340,7 @@ function! unitTest.PrintStatistics(caller,...) dict "{{{2
 	return sFoo
 endfunction
 
-function! unitTest.RunnerInit() dict	"{{{2
+function! UnitTest.RunnerInit() dict	"{{{2
     echomsg "CLEARING: statistics"
 	let self.testRunCount = 0
 	let self.testRunFailureCount = 0
@@ -323,7 +357,7 @@ endfunction
 " RETURNS:
 "	
 " -----------------------------------------
-function! unitTest.ExpectFailure(caller,...) dict  "{{{2
+function! UnitTest.ExpectFailure(caller,...) dict  "{{{2
 	"TODO: Add msg trace
 	let self.testRunExpectedFailuresCount = self.testRunExpectedFailuresCount + 1
 endfunction
@@ -389,11 +423,11 @@ if s:vimUnitAutoRun == 0
 endif
 
 " SelfTest class init {{{1
-let s:selfTest = copy(unitTest)
-let s:selfTest.name = "VimUnitSelfTestSuite"
+let s:SelfTest = copy(UnitTest)
+let s:SelfTest.name = "VimUnitSelfTestSuite"
 
 " SelfTest Assert {{{1
-function! s:selfTest.TestAssertEquals() dict  "{{{2
+function! s:SelfTest.TestAssertEquals() dict  "{{{2
 	let sSelf = 'TestAssertEquals'
 	call self.AssertEquals(1,1,'Simple test comparing numbers')
 	call self.ExpectFailure(sSelf,'AssertEquals(1,2,"")')
@@ -427,7 +461,7 @@ function! s:selfTest.TestAssertEquals() dict  "{{{2
 "	self.AssertEquals(%%%,%%%,"Simple test comparing %%%,expect failure')
 endfunction
 
-function! s:selfTest.TestAssertTrue() dict  "{{{2
+function! s:SelfTest.TestAssertTrue() dict  "{{{2
 	let sSelf = 'TestAssertTrue'
 	call self.AssertTrue(TRUE(),'Simple test Passing function TRUE()')
 	call self.ExpectFailure(sSelf,'AssertTrue(FALSE(),"")')
@@ -444,16 +478,23 @@ function! s:selfTest.TestAssertTrue() dict  "{{{2
 	call self.AssertTrue(arg1, 'Simple test passing arg1=0,expect failure')		
 
 	
-	call self.ExpectFailure(sSelf,'AssertTrue("test","")')
 	call self.AssertTrue("test",'Simple test passing string')
+
 	call self.ExpectFailure(sSelf,'AssertTrue("","")')
 	call self.AssertTrue("", 'Simple test passing empty string,expect failure')	
 
-	call self.ExpectFailure(sSelf,'AssertTrue(arg1="test","")')
 	let arg1 = 'test'
 	call self.AssertTrue(arg1,'Simple test passing arg1 = test')
+    let arg1 = ""
 	call self.ExpectFailure(sSelf,'AssertTrue(arg1="","")')
 	call self.AssertTrue(arg1, 'Simple test passing arg1="",expect failure')	
+
+    call self.AssertTrue([1,], 'Passing non-empty list')
+	call self.ExpectFailure(sSelf,'AssertTrue(arg1=[])')
+    call self.AssertTrue([], 'Passing empty list, expect failure')
+    call self.AssertTrue({"one":1}, 'Passing non-empty dictionary')
+	" call self.ExpectFailure(sSelf,'AssertTrue(arg1={})')
+    " call self.AssertTrue({}, 'Passing empty dictionary, expect failure')
 
 "	self.AssertTrue(%%%,'Simple test %%%')
 "	self.ExpectFailure(sSelf,'AssertTrue(%%%,"")')
@@ -461,35 +502,34 @@ function! s:selfTest.TestAssertTrue() dict  "{{{2
 	
 endfunction
 
-function! s:selfTest.TestAssertFalse() dict  "{{{2
+function! s:SelfTest.TestAssertFalse() dict  "{{{2
 	let sSelf = 'TestAssertFalse'
 	call self.AssertFalse(FALSE(), 'Simple test Passing FALSE()')	
-	call self.ExpectFailure(sSelf,'AssertFalse(TRUE(),"")')
-	call self.AssertFalse(TRUE(),'Simple test Passing function TRUE(),expect failure')	
+	" call self.ExpectFailure(sSelf,'AssertFalse(TRUE(),"")')
+	" call self.AssertFalse(TRUE(),'Simple test Passing function TRUE(),expect failure')	
 
 	call self.AssertFalse(0,'Simple test passing 0')
-	call self.ExpectFailure(sSelf,'AssertFalse(1,"")')
-	call self.AssertFalse(1, 'Simple test passing 1,expect failure')	
+	" call self.ExpectFailure(sSelf,'AssertFalse(1,"")')
+	" call self.AssertFalse(1, 'Simple test passing 1,expect failure')	
 
 	let arg1 = 0
 	call self.AssertFalse(arg1,'Simple test arg1 = 0')
-	call self.ExpectFailure(sSelf,'AssertFalse(arg1=1,"")')
-	let arg1 = 1
-	call self.AssertFalse(arg1, 'Simple test passing arg1=1,expect failure')		
+	" call self.ExpectFailure(sSelf,'AssertFalse(arg1=1,"")')
+	" let arg1 = 1
+	" call self.AssertFalse(arg1, 'Simple test passing arg1=1,expect failure')		
 
-	call self.ExpectFailure(sSelf,'AssertFalse("test","")')
-	call self.AssertFalse("test",'Simple test passing string')
-	call self.ExpectFailure(sSelf,'AssertFalse("","")')
-	call self.AssertFalse("", 'Simple test passing empty string,expect failure')	
+	" call self.ExpectFailure(sSelf,'AssertFalse("test","")')
+	" call self.AssertFalse("test",'Simple test passing string')
+	call self.AssertFalse("", 'Simple test passing empty string, should pass')	
 
-	call self.ExpectFailure(sSelf,'AssertFalse(arg1="test","")')
-	let arg1 = 'test'
+	" call self.ExpectFailure(sSelf,'AssertFalse(arg1="test","")')
+	" let arg1 = 'test'
 	call self.AssertFalse(arg1,'Simple test passing arg1 = test')
-	call self.ExpectFailure(sSelf,'AssertFalse(arg1="","")')
-	call self.AssertFalse(arg1, 'Simple test passing arg1="",expect failure')	
+    let arg1 = ""
+	call self.AssertFalse(arg1, 'Simple test passing arg1="", should pass')	
 	
 endfunction
-function! s:selfTest.TestAssertNotNull() dict "{{{2
+function! s:SelfTest.TestAssertNotNull() dict "{{{2
 	"NOTE: I do not think we will have a situation in a vim-script where we
 	"can pass a variable containing a null as I understand it that is a 
 	"uninitiated variable. 
@@ -520,14 +560,14 @@ endfunction
 
 
 
-function! s:selfTest.TestAssertFail() dict  "{{{2
+function! s:SelfTest.TestAssertFail() dict  "{{{2
 	let sSelf = 'testAssertFail'
 	call self.ExpectFailure(sSelf,'Calling AssertFail()')
 	call self.AssertFail('Expected failure')
 endfunction
 
 
-function! s:selfTest.TestExtractFunctionName() dict "{{{1
+function! s:SelfTest.TestExtractFunctionName() dict "{{{1
 	let sSelf = 'TestExtractFunctionName'
 	"Testing leagal function declarations
 	"NOTE: The markers in the test creates a bit of cunfusion
@@ -673,13 +713,13 @@ endfunction
   silent! let s:help_install_status =
       \ <SID>InstallDocumentation(expand('<sfile>:p'), s:revision)
   if (s:help_install_status == 1) 
-	  call s:selfTest.RunTests()
+	  call s:SelfTest.RunTests()
       echom expand("<sfile>:t:r") . ' v' . s:revision .
 		\ ': Help-documentation installed.'
   endif
 
 	if (g:vimUnitSelfTest == 1)
-	  call s:selfTest.RunTests()
+	  call s:SelfTest.RunTests()
       echo "Should run test here"
 	endif	
 
