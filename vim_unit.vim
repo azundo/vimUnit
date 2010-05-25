@@ -339,6 +339,39 @@ function! UnitTest.AssertFail(...) dict "{{{2
     return FALSE()
 endfunction
 
+" ---------------------------------------------------------------------
+" FUNCTION: AssertRaises {{{2
+" PURPOSE:
+"   Test that a call to a function raises a particular exception
+" ARGUMENTS:
+"   exception : Pattern for the exception to be raised.
+"   func_ref : Function reference to call.
+"   func_args : a list with all function arguments.
+"   ...  : Optional message.
+" RETURNS:
+"   1 if exception is raised when func_ref is called with func_args
+"   raises UnitTestFailed exception otherwise
+" ---------------------------------------------------------------------
+function! UnitTest.AssertRaises(exception, Func_ref, func_args, ...) dict
+    let bFoo = 0
+    let self.testRunCount = self.testRunCount + 1
+    try
+        let s = call(a:Func_ref, a:func_args)
+    catch 
+        " set bFoo to 1 if we get the expected exception
+        if match(v:exception, a:exception) != -1
+            let bFoo = 1
+        endif
+    endtry
+    if bFoo != 1
+        let self.testRunFailureCount = self.testRunFailureCount + 1
+        call <SID>MsgSink('FAILED: AssertRaises', string(a:Func_ref).' called with args '.string(a:func_args).' did raise exception matching '.a:exception.' MSG: '.a:1)
+    else
+        let self.testRunSuccessCount = self.testRunSuccessCount + 1
+    endif
+    return bFoo
+endfunction
+
 " VURunner {{{1
 " -----------------------------------------
 " FUNCTION: RunTests {{{2
@@ -656,6 +689,18 @@ function! s:SelfTest.TestAssertFail() dict  "{{{2
     let sSelf = 'testAssertFail'
     call self.ExpectFailure(sSelf,'Calling AssertFail()')
     call self.AssertFail('Expected failure')
+endfunction
+
+function! s:ThrowsException(arg1, ...)
+    throw 'E554 Exception to be thrown! Arg is '.a:arg1.'. Called with '.string(a:0).' extra args.'
+endfunction
+
+function! s:SelfTest.TestAssertRaises() dict "{{{2
+    let Fn = function("s:ThrowsException")
+    call self.AssertRaises('Exception', Fn, ['arg1', 'arg2'], 'Function should raise exception matching "Exception"')
+    call self.AssertRaises('E554', Fn, ['arg1', 'arg2'], 'Function should raise exception matching "E554"')
+    call self.AssertRaises('arg1', Fn, ['arg1', 'arg2'], 'Function should raise exception matching "arg1"')
+    call self.AssertRaises('Called with 3 extra args', Fn, ['arg1', 'arg2', 'extra', 'another extra'], 'Function should raise exception matching "Called with 3 extra args"')
 endfunction
 
 
