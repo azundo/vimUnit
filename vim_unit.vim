@@ -540,8 +540,6 @@ function! s:selfTest.TestExtractFunctionName() dict "{{{1
 	let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction(arg1, funcarg1, ..)'),'arguments contain func')
 endfunction	"}}}
 
-" call s:selfTest.RunTests()
-
 
 " Help (Documentation) installation {{{1
 "
