@@ -138,7 +138,7 @@ endif
 " RETURNS:
 "	false
 " -----------------------------------------
-function! UnitTest.TODO(funcName) dict	"{{{2 
+function! UnitTest.TODO(funcName) dict	"{{{2
 	echomsg '[TODO] '.a:funcName
 	return FALSE()
 endfunction
@@ -309,10 +309,10 @@ endfunction
 
 " VUAssert that the arg1 is initialized (is not null)
 " Is this situation possible in vim script?
-function! UnitTest.AssertNotNull(arg1, ...) dict	"{{{2	
+function! UnitTest.AssertNotNull(arg1, ...) dict	"{{{2
 	"NOTE: I do not think we will have a situation in a vim-script where we
-	"can pass a variable containing a null as I understand it that is a 
-	"uninitiated variable. 
+	"can pass a variable containing a null as I understand it that is a
+	"uninitiated variable.
 	"
 	"vim will give a warning (error) msg when we try to do this.
 	"
@@ -327,16 +327,16 @@ function! UnitTest.AssertNotNull(arg1, ...) dict	"{{{2
 		let self.testRunFailureCount = self.testRunFailureCount + 1
 		let bFoo = FALSE()
 		call <SID>MsgSink('FAILED: AssertNotNull','arg1: Does not exist')
-	endif	
-	return bFoo		
+	endif
+	return bFoo	
 endfunction
 
 "Fail a test with no arguments
 function! UnitTest.AssertFail(...) dict	"{{{2
-	let self.testRunCount = self.testRunCount + 1	
+	let self.testRunCount = self.testRunCount + 1
 	let self.testRunFailureCount = self.testRunFailureCount + 1
 	call <SID>MsgSink('FAILED: AssertFail','')
-	return FALSE()	
+	return FALSE()
 endfunction
 
 " VURunner {{{1
@@ -357,7 +357,7 @@ function! UnitTest.RunTests() dict
                 call self[key]()
             endif
         endfor
-		call self.PrintStatistics(self.name)	
+		call self.PrintStatistics(self.name)
 endfunction
 
 " ----------------------------------------- {{{2
@@ -380,7 +380,7 @@ function! UnitTest.PrintStatistics(caller,...) dict
 	endif
 	let sFoo = sFoo."Test count:\t".self.testRunCount."\nTest Success:\t".self.testRunSuccessCount."\nTest failures:\t".self.testRunFailureCount."\nExpected failures:\t".self.testRunExpectedFailuresCount
 	let sFoo = sFoo."\n--------------------------------------------------\n"
-	" 
+	"
 	echo sFoo
 	return sFoo
 endfunction
@@ -407,9 +407,9 @@ endfunction
 " PURPOSE:
 "	Notify the runner that the next test is supposed to fail
 " ARGUMENTS:
-"	
+"
 " RETURNS:
-"	
+"
 " -----------------------------------------
 function! UnitTest.ExpectFailure(caller,...) dict  "{{{2
 	"TODO: Add msg trace
@@ -449,16 +449,16 @@ if !exists('s:vimUnitAutoRun')
 	let s:vimUnitAutoRun = 0
 endif
 if s:vimUnitAutoRun == 0
-" function! VUAutoRun() 
+" function! VUAutoRun()
 " 	"NOTE:If you change thsi code you must manualy source the file!
-" 
+"
 " 	let s:vimUnitAutoRun = 1
 " 	"Prevent VimUnit from runing selftest if we are testing VimUnit.vim
 " 	let b:currentVimSelfTest = g:vimUnitSelfTest
 " 	let g:vimUnitSelfTest = 0
 " 	"Locate function line on line with or above current line
 " 	let sFoo = <SID>ExtractFunctionName(<SID>GetCurrentFunctionName())
-" 	if match(sFoo,'^Test') > -1 
+" 	if match(sFoo,'^Test') > -1
 " 		"We found the function name and it starts with Test so we source the
 " 		"file and self.RunTests to run the test
 " 		exe "w|so %"
@@ -490,12 +490,12 @@ function! s:SelfTest.TestAssertEquals() dict  "{{{2
 	call self.AssertEquals('str1','str1','Simple test comparing two strings')
 	call self.AssertEquals('str1',"str1",'Simple test comparing two strings')
 	call self.ExpectFailure(sSelf,"AssertEquals(\'str1\',\"str1\",\"\")")
-	call self.AssertEquals('str1','str2','Simple test comparing two diffrent strings,expect failure')	
+	call self.AssertEquals('str1','str2','Simple test comparing two diffrent strings,expect failure')
 
 	call self.AssertEquals(123,'123','Simple test comparing number and string containing number')
 	call self.ExpectFailure(sSelf,"AssertEquals(123,'321',\"\")")
 	call self.AssertEquals(123,'321','Simple test comparing number and string containing diffrent number,expect failure')
-	
+
 	let arg1 = 1
 	let arg2 = 1
 	call self.AssertEquals(arg1,arg2,'Simple test comparing two variables containing the same number')
@@ -521,7 +521,7 @@ function! s:SelfTest.TestAssertNotEquals() dict  "{{{2
 	call self.ExpectFailure(sSelf,'AssertNotEquals(1,1,"")')
 	call self.AssertNotEquals(1,1,'Simple test comparing numbers,expect failure')
 
-	call self.AssertNotEquals('str1','str2','Simple test comparing two diffrent strings')	
+	call self.AssertNotEquals('str1','str2','Simple test comparing two diffrent strings')
 	call self.ExpectFailure(sSelf,"AssertNotEquals(\'str1\',\"str1\",\"\")")
 	call self.AssertNotEquals('str1',"str1",'Simple test comparing two strings,expect failure')
 
@@ -552,29 +552,29 @@ function! s:SelfTest.TestAssertTrue() dict  "{{{2
 	let sSelf = 'TestAssertTrue'
 	call self.AssertTrue(TRUE(),'Simple test Passing function TRUE()')
 	call self.ExpectFailure(sSelf,'AssertTrue(FALSE(),"")')
-	call self.AssertTrue(FALSE(), 'Simple test Passing FALSE(),expect failure')	
+	call self.AssertTrue(FALSE(), 'Simple test Passing FALSE(),expect failure')
 
 	call self.AssertTrue(1,'Simple test passing 1')
 	call self.ExpectFailure(sSelf,'AssertTrue(0,"")')
-	call self.AssertTrue(0, 'Simple test passing 0,expect failure')	
+	call self.AssertTrue(0, 'Simple test passing 0,expect failure')
 
 	let arg1 = 1
 	call self.AssertTrue(arg1,'Simple test arg1 = 1')
 	call self.ExpectFailure(sSelf,'AssertTrue(arg1=0,"")')
 	let arg1 = 0
-	call self.AssertTrue(arg1, 'Simple test passing arg1=0,expect failure')		
+	call self.AssertTrue(arg1, 'Simple test passing arg1=0,expect failure')	
 
 	
 	call self.AssertTrue("test",'Simple test passing string')
 
 	call self.ExpectFailure(sSelf,'AssertTrue("","")')
-	call self.AssertTrue("", 'Simple test passing empty string,expect failure')	
+	call self.AssertTrue("", 'Simple test passing empty string,expect failure')
 
 	let arg1 = 'test'
 	call self.AssertTrue(arg1,'Simple test passing arg1 = test')
     let arg1 = ""
 	call self.ExpectFailure(sSelf,'AssertTrue(arg1="","")')
-	call self.AssertTrue(arg1, 'Simple test passing arg1="",expect failure')	
+	call self.AssertTrue(arg1, 'Simple test passing arg1="",expect failure')
 
     call self.AssertTrue([1,], 'Passing non-empty list')
 	call self.ExpectFailure(sSelf,'AssertTrue(arg1=[])')
@@ -585,41 +585,41 @@ function! s:SelfTest.TestAssertTrue() dict  "{{{2
 
 "	self.AssertTrue(%%%,'Simple test %%%')
 "	self.ExpectFailure(sSelf,'AssertTrue(%%%,"")')
-"	self.AssertTrue(%%%, 'Simple test %%%,expect failure')		
+"	self.AssertTrue(%%%, 'Simple test %%%,expect failure')	
 	
 endfunction
 
 function! s:SelfTest.TestAssertFalse() dict  "{{{2
 	let sSelf = 'TestAssertFalse'
-	call self.AssertFalse(FALSE(), 'Simple test Passing FALSE()')	
+	call self.AssertFalse(FALSE(), 'Simple test Passing FALSE()')
 	call self.ExpectFailure(sSelf,'AssertFalse(TRUE(),"")')
-	call self.AssertFalse(TRUE(),'Simple test Passing function TRUE(),expect failure')	
+	call self.AssertFalse(TRUE(),'Simple test Passing function TRUE(),expect failure')
 
 	call self.AssertFalse(0,'Simple test passing 0')
 	call self.ExpectFailure(sSelf,'AssertFalse(1,"")')
-	call self.AssertFalse(1, 'Simple test passing 1,expect failure')	
+	call self.AssertFalse(1, 'Simple test passing 1,expect failure')
 
 	let arg1 = 0
 	call self.AssertFalse(arg1,'Simple test arg1 = 0')
 	call self.ExpectFailure(sSelf,'AssertFalse(arg1=1,"")')
 	let arg1 = 1
-	call self.AssertFalse(arg1, 'Simple test passing arg1=1,expect failure')		
+	call self.AssertFalse(arg1, 'Simple test passing arg1=1,expect failure')
 
 	call self.ExpectFailure(sSelf,'AssertFalse("test","")')
 	call self.AssertFalse("test",'Simple test passing string, expect failure')
-	call self.AssertFalse("", 'Simple test passing empty string, should pass')	
+	call self.AssertFalse("", 'Simple test passing empty string, should pass')
 
 	call self.ExpectFailure(sSelf,'AssertFalse(arg1="test","")')
 	let arg1 = 'test'
 	call self.AssertFalse(arg1,'Simple test passing arg1 = test, expect failure')
     let arg1 = ""
-	call self.AssertFalse(arg1, 'Simple test passing arg1="", should pass')	
+	call self.AssertFalse(arg1, 'Simple test passing arg1="", should pass')
 	
 endfunction
 function! s:SelfTest.TestAssertNotNull() dict "{{{2
 	"NOTE: I do not think we will have a situation in a vim-script where we
-	"can pass a variable containing a null as I understand it that is a 
-	"uninitiated variable. 
+	"can pass a variable containing a null as I understand it that is a
+	"uninitiated variable.
 	"
 	"vim will give a warning (error) msg when we try to do this.
 	"
@@ -638,7 +638,7 @@ function! s:SelfTest.TestAssertNotNull() dict "{{{2
 	
 	call self.ExpectFailure(sSelf,'Trying to pass a uninitiated variable')
 	try
-		call self.AssertNotNull(sTest2,'Trying to pass a uninitated variable sTest2')	
+		call self.AssertNotNull(sTest2,'Trying to pass a uninitated variable sTest2')
 	catch
 		call self.AssertFail('Trying to pass a uninitated variable sTest2')
 	endtry
@@ -672,7 +672,7 @@ endfunction	"}}}
 "
 " InstallDocumentation {{{2
 " ---------------------------------------------------------------------
-" Function: <SID>InstallDocumentation(full_name, revision)   
+" Function: <SID>InstallDocumentation(full_name, revision)
 "   Install help documentation.
 " Arguments:
 "   full_name: Full name of this vim pluggin script, including path name.
@@ -799,7 +799,7 @@ endfunction
 	\ substitute("$Revision: 0.1 $",'\$\S*: \([.0-9]\+\) \$','\1','')
   silent! let s:help_install_status =
       \ <SID>InstallDocumentation(expand('<sfile>:p'), s:revision)
-  if (s:help_install_status == 1) 
+  if (s:help_install_status == 1)
 	  call s:SelfTest.RunTests()
       echom expand("<sfile>:t:r") . ' v' . s:revision .
 		\ ': Help-documentation installed.'
@@ -808,7 +808,7 @@ endfunction
 	if (g:vimUnitSelfTest == 1)
 	  call s:SelfTest.RunTests()
       echo "Should run test here"
-	endif	
+	endif
 
 " Stop sourceing this file, no code after this.
 finish
