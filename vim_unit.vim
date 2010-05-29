@@ -161,7 +161,7 @@ endfunction
 "   1 if arg1 != arg2
 " ---------------------------------------------------------------------
 function! UnitTest.AssertEquals(arg1, arg2, ...) dict
-    if a:arg1 == a:arg2
+    if type(a:arg1) == type(a:arg2) && a:arg1 == a:arg2
         let bFoo = TRUE()
     else
         let bFoo = FALSE()
@@ -187,7 +187,7 @@ endfunction
 "   0 if arg1 != arg2
 " ---------------------------------------------------------------------
 function! UnitTest.AssertNotEquals(arg1, arg2, ...) dict    "{{{2
-    if a:arg1 != a:arg2
+    if (type(a:arg1) == type(a:arg2) && a:arg1 != a:arg2) || type(a:arg1) != type(a:arg2)
         let bFoo = TRUE()
     else
         let bFoo = FALSE()
@@ -396,7 +396,7 @@ function! UnitTest.AssertRaises(exception, Func_ref, func_args, ...) dict
         endif
     endtry
     if bFoo != 1
-        let msg = string(a:Func_ref).' called with args '.string(a:func_args).' did not raise exception matching '.a:exception.        
+        let msg = string(a:Func_ref).' called with args '.string(a:func_args).' did not raise exception matching '.a:exception.'.'
         " add extra_msg here
         let msg = msg.' '.extra_msg
         throw self.BuildException("AssertRaises", msg)
@@ -553,7 +553,7 @@ function! s:SelfTest.TestAssertEquals() dict  "{{{2
     call self.AssertEquals('str1',"str1",'Simple test comparing two strings')
     call self.AssertRaises('vimUnitTestFailure', self.AssertEquals, ['str1','str2','Simple test comparing two diffrent strings,expect failure'], self, "Uneqal strings should fail test.")
 
-    call self.AssertEquals(123,'123','Simple test comparing number and string containing number')
+    call self.AssertRaises('vimUnitTestFailure', self.AssertEquals, [123,'123','Simple test comparing number and string containing same number.'], self, 'String and number should not be equal even if they are the same.')
     call self.AssertRaises('vimUnitTestFailure', self.AssertEquals, [123,'321','Simple test comparing number and string containing diffrent number'], self, 'Different string and number should not be equal.')
 
     let arg1 = 1
@@ -568,6 +568,8 @@ function! s:SelfTest.TestAssertEquals() dict  "{{{2
     let arg2 = "test2"
     call self.AssertRaises('vimUnitTestFailure', self.AssertEquals, [arg1,arg2,'Simple test comparing two variables containing diffrent strings,expect failure'], self, "Strings as args that are different shouldn't be equal")
 
+    call self.AssertRaises('vimUnitTestFailure', self.AssertEquals, [0, 'a string', 'Simple test comparing 0 to a string, expect failure.'], self, "A string and 0 should not be equal.")
+
 endfunction
 
 function! s:SelfTest.TestAssertNotEquals() dict  "{{{2
@@ -579,8 +581,7 @@ function! s:SelfTest.TestAssertNotEquals() dict  "{{{2
     call self.AssertRaises('vimUnitTestFailure', self.AssertNotEquals, ['str1',"str1",'Simple test comparing two strings,expect failure'], self, 'str1 and str1 should not be unequal')
 
     call self.AssertNotEquals(123,'321','Simple test comparing number and string containing diffrent number')
-    call self.AssertRaises('vimUnitTestFailure', self.AssertNotEquals, [123,'123','Simple test comparing number and string containing number,expect failure'], self, "The string '123' and number 123 should be equal in vim.")
-    
+    call self.AssertNotEquals(123,'123','Simple test comparing number and string containing number')
     let arg1 = 1
     let arg2 = 2
     call self.AssertNotEquals(arg1,arg2,'Simple test comparing two variables containing diffrent numbers')
@@ -592,6 +593,9 @@ function! s:SelfTest.TestAssertNotEquals() dict  "{{{2
     call self.AssertNotEquals(arg1,arg2,'Simple test comparing two variables containing diffrent strings')
     let arg2 = "test1"
     call self.AssertRaises('vimUnitTestFailure', self.AssertNotEquals, [arg1,arg2,'Simple test comparing two variables containing equal strings,expect failure'], self, "test1 and test1 should be equal, even when args.")
+    call self.AssertNotEquals(0, "string", "A string and 0 should not be equal.")
+    call self.AssertNotEquals(0, [0,], "A list and an int should not be equal.")
+
 
 endfunction
 
@@ -713,6 +717,10 @@ function! s:SelfTest.TestExtractFunctionName() dict "{{{1
     let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('   func TestFunction()    "{{{3'),'Declaration starting with space and ending with commented folding marker')
     let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction(arg1, funcarg1, ..)'),'arguments contain func')
 endfunction "}}}
+
+function! b:AccessScriptVars()
+    call s:SelfTest.TestAssertNotEquals()
+endfunction
 
 
 " Help (Documentation) installation {{{1
