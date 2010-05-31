@@ -126,6 +126,24 @@ if !exists('UnitTest')
     let UnitTest.name = 'OVERWRITE ME'
 endif
 
+" A FunctionRegister object to keep track of objects' anonymous functions {{{2
+if !exists('FunctionRegister')
+    let FunctionRegister = {}
+    let FunctionRegister.functions = {}
+endif
+
+function! FunctionRegister.AddObject(obj, name) dict
+    for key in keys(a:obj)
+        if type(a:obj[key]) == type(function('tr'))
+            let func_name = string(a:obj[key])
+            let func_num = matchstr(func_name, '\d\+')
+            let self.functions[func_num] = a:name .'.'. key
+        endif
+    endfor
+endfunction
+
+
+
 
 " Exception Builder
 "
