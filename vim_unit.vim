@@ -133,26 +133,52 @@ function! FunctionRegister.AddObject(obj, name) dict
     endfor
 endfunction
 
+
+
+" UnitTest Object {{{1
+"
 "   Main UnitTest object definition{{{2
 if !exists('UnitTest')
     let UnitTest = {}
-    let UnitTest.testRunCount = 0
-    let UnitTest.testRunSuccessCount = 0
-    let UnitTest.testRunFailureCount = 0
-    let UnitTest.testRunErrorCount = 0
-    let UnitTest.name = 'OVERWRITE ME'
-    let UnitTest.functionRegister = FunctionRegister
 endif
 
-" Exception Builder
-"
+" -----------------------------------------
+" FUNCTION: UnitTest.init {{{2
+" PURPOSE:
+"   Provides a class instantiator for the UnitTest class
+" ARGUMENTS:
+"   name:   The name given to the UnitTest instance for printouts
+" RETURNS:
+"   new UnitTest instance
+" -----------------------------------------
+function! UnitTest.init(name) dict
+    let instance = copy(self)
+    let instance.testRunCount = 0
+    let instance.testRunSuccessCount = 0
+    let instance.testRunFailureCount = 0
+    let instance.testRunErrorCount = 0
+    let instance.name = a:name
+    let instance.functionRegister = g:FunctionRegister
+    return instance
+endfunction
+
+
+" -----------------------------------------
+" FUNCTION: UnitTest.BuildException {{{2
+" PURPOSE:
+"   Builds a vimUnitTestFailure exception.
+" ARGUMENTS:
+"   caller: the function raising the exception
+"   msg: a message to be printed with the exception
+" RETURNS:
+"   Exception string
+" -----------------------------------------
 function! UnitTest.BuildException(caller, msg) dict
     return "vimUnitTestFailure: ".a:caller.": ".a:msg
 endfunction
 
-" VUAssert {{{1
 " -----------------------------------------
-" FUNCTION: TODO:
+" FUNCTION: UnitTest.TODO: {{{2
 " PURPOSE:
 "   Just a reminder that a function is not (fully) implemented.
 " ARGUMENTS:
@@ -160,13 +186,13 @@ endfunction
 " RETURNS:
 "   false
 " -----------------------------------------
-function! UnitTest.TODO(funcName) dict  "{{{2
+function! UnitTest.TODO(funcName) dict
     echomsg '[TODO] '.a:funcName
     return FALSE()
 endfunction
 
 " ---------------------------------------------------------------------
-" FUNCTION: AssertEquals {{{2
+" FUNCTION: UnitTest.AssertEquals {{{2
 " PURPOSE:
 "   Compare arguments
 " ARGUMENTS:
@@ -192,7 +218,7 @@ function! UnitTest.AssertEquals(arg1, arg2, ...) dict
     return bFoo
 endfunction
 " ---------------------------------------------------------------------
-" FUNCTION: AssertNotEquals
+" FUNCTION: UnitTest.AssertNotEquals "{{{2
 " PURPOSE:
 "   Compare arguments
 " ARGUMENTS:
@@ -203,7 +229,7 @@ endfunction
 "   1 if arg1 == arg2
 "   0 if arg1 != arg2
 " ---------------------------------------------------------------------
-function! UnitTest.AssertNotEquals(arg1, arg2, ...) dict    "{{{2
+function! UnitTest.AssertNotEquals(arg1, arg2, ...) dict
     if (type(a:arg1) == type(a:arg2) && a:arg1 != a:arg2) || type(a:arg1) != type(a:arg2)
         let bFoo = TRUE()
     else
@@ -217,8 +243,9 @@ function! UnitTest.AssertNotEquals(arg1, arg2, ...) dict    "{{{2
     endif
     return bFoo
 endfunction
+
 " ---------------------------------------------------------------------
-" FUNCTION: AssertTrue
+" FUNCTION: UnitTest.AssertTrue {{{2
 " PURPOSE:
 "   Check that the passed argument validates to true
 " ARGUMENTS:
@@ -228,7 +255,7 @@ endfunction
 "   TRUE() if true and
 "   FALSE() if false
 " ---------------------------------------------------------------------
-function! UnitTest.AssertTrue(arg1, ...) dict   "{{{2
+function! UnitTest.AssertTrue(arg1, ...) dict
     let bFoo = FALSE()
     let arg_type = type(a:arg1)
     let arg_as_string = ""
@@ -276,7 +303,7 @@ function! UnitTest.AssertTrue(arg1, ...) dict   "{{{2
     return bFoo
 endfunction
 " ---------------------------------------------------------------------
-" FUNCTION:  AssertFalse
+" FUNCTION:  UnitTest.AssertFalse {{{2
 " PURPOSE:
 "   Test if the argument equals false
 " ARGUMENTS:
@@ -285,7 +312,7 @@ endfunction
 "   0 if true
 "   1 if false
 " ---------------------------------------------------------------------
-function! UnitTest.AssertFalse(arg1, ...) dict  "{{{2
+function! UnitTest.AssertFalse(arg1, ...) dict
     let bFoo = FALSE()
     let arg_type = type(a:arg1)
     let arg_as_string = ""
@@ -359,7 +386,15 @@ function! UnitTest.AssertNotNull(arg1, ...) dict    "{{{2
     return bFoo 
 endfunction
 
-"Fail a test with no arguments
+" ---------------------------------------------------------------------
+" FUNCTION: UnitTest.AssertFail {{{2
+" PURPOSE:
+"   Explicitly cause a test failure
+" ARGUMENTS:
+"   ...  : Optional message.
+" RETURNS:
+"   raises UnitTestFailed exception
+" ---------------------------------------------------------------------
 function! UnitTest.AssertFail(...) dict "{{{2
     let msg = "Failure asserted."
     if a:0 > 0
@@ -370,7 +405,7 @@ function! UnitTest.AssertFail(...) dict "{{{2
 endfunction
 
 " ---------------------------------------------------------------------
-" FUNCTION: AssertRaises {{{2
+" FUNCTION: UnitTest.AssertRaises {{{2
 " PURPOSE:
 "   Test that a call to a function raises a particular exception
 " ARGUMENTS:
@@ -421,9 +456,8 @@ function! UnitTest.AssertRaises(exception, Func_ref, func_args, ...) dict
     return bFoo
 endfunction
 
-" VURunner {{{1
 " -----------------------------------------
-" FUNCTION: RunTests {{{2
+" FUNCTION: UnitTest.RunTests {{{2
 " PURPOSE:
 "   Run tests contained in the current object
 " ARGUMENTS:
@@ -456,7 +490,7 @@ function! UnitTest.RunTests() dict
 endfunction
 
 " -----------------------------------------
-" FUNCTION: ParseThrowpoint {{{2
+" FUNCTION: UnitTest.ParseThrowpoint {{{2
 " PURPOSE:
 "   Substitute any anonymous function numbers with references if in
 "   FunctionRegister
@@ -486,7 +520,7 @@ function! UnitTest.ParseThrowpoint(throwpoint) dict
 endfunction
 
 " -----------------------------------------
-" FUNCTION: PrintStatistics {{{2
+" FUNCTION: UnitTest.PrintStatistics {{{2
 " PURPOSE:
 "   Print statistics about test's
 " ARGUMENTS:
@@ -511,7 +545,7 @@ function! UnitTest.PrintStatistics(caller,...) dict
 endfunction
 
 " -----------------------------------------
-" FUNCTION: RunnerInit {{{2
+" FUNCTION: UnitTest.RunnerInit {{{2
 " PURPOSE:
 "   Reset statistics to zero and self to functionRegister
 " ARGUMENTS:
@@ -593,8 +627,7 @@ if s:vimUnitAutoRun == 0
 endif
 
 " SelfTest class init {{{1
-let s:SelfTest = copy(UnitTest)
-let s:SelfTest.name = "VimUnitSelfTestSuite"
+let s:SelfTest = UnitTest.init("VimUnitSelfTestSuite")
 
 " SelfTest Assert {{{1
 function! s:SelfTest.TestAssertEquals() dict  "{{{2
