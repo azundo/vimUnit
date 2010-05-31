@@ -5,7 +5,7 @@
 "  AUTHOR:          Staale Flock, Staale -- lexholm .. no
 "  MODIFIED:        Ben Best
 "  VERSION:         0.2
-"  LASTMODIFIED:    24 May 2010
+"  LASTMODIFIED:    31 May 2010
 "
 "  PURPOSE:
 "       To provide vim scripts with a simple unit testing framework and tools.
@@ -116,17 +116,8 @@ if !exists('g:vimUnitVerbosity')
     let g:vimUnitVerbosity = 1
 endif
 
-"   Main UnitTest object definition{{{2
-if !exists('UnitTest')
-    let UnitTest = {}
-    let UnitTest.testRunCount = 0
-    let UnitTest.testRunSuccessCount = 0
-    let UnitTest.testRunFailureCount = 0
-    let UnitTest.testRunErrorCount = 0
-    let UnitTest.name = 'OVERWRITE ME'
-endif
-
 " A FunctionRegister object to keep track of objects' anonymous functions {{{2
+" This object is a singleton so we only have to add objects to it once
 if !exists('FunctionRegister')
     let FunctionRegister = {}
     let FunctionRegister.functions = {}
@@ -142,8 +133,16 @@ function! FunctionRegister.AddObject(obj, name) dict
     endfor
 endfunction
 
-
-
+"   Main UnitTest object definition{{{2
+if !exists('UnitTest')
+    let UnitTest = {}
+    let UnitTest.testRunCount = 0
+    let UnitTest.testRunSuccessCount = 0
+    let UnitTest.testRunFailureCount = 0
+    let UnitTest.testRunErrorCount = 0
+    let UnitTest.name = 'OVERWRITE ME'
+    let UnitTest.functionRegister = FunctionRegister
+endif
 
 " Exception Builder
 "
@@ -443,15 +442,47 @@ function! UnitTest.RunTests() dict
                     let self.testRunSuccessCount = self.testRunSuccessCount + 1
                 catch /vimUnitTestFailure/
                     let self.testRunFailureCount = self.testRunFailureCount + 1
-                    call <SID>MsgSink('FAILURE.', v:exception." in ".v:throwpoint)
+                    let better_throwpoint = self.ParseThrowpoint(v:throwpoint)
+                    call <SID>MsgSink('FAILURE.', v:exception." in ".better_throwpoint)
                 catch
                     let self.testRunErrorCount = self.testRunErrorCount + 1
-                    let message = "ERROR. Exception: ".v:exception." in ".v:throwpoint
+                    let better_throwpoint = self.ParseThrowpoint(v:throwpoint)
+                    let message = "ERROR. Exception: ".v:exception." in ".better_throwpoint
                     call <SID>MsgSink(key, message)
                 endtry
             endif
         endfor
         call self.PrintStatistics(self.name)
+endfunction
+
+" -----------------------------------------
+" FUNCTION: ParseThrowpoint {{{2
+" PURPOSE:
+"   Substitute any anonymous function numbers with references if in
+"   FunctionRegister
+" ARGUMENTS:
+"   throwpoint: the v:throwpoint variable
+" RETURNS:
+"   parsed throwpoint with values from functionRegister.functions
+" -----------------------------------------
+function! UnitTest.ParseThrowpoint(throwpoint) dict
+    " Throwpoints are formatted as function func1..func2..func3, line n
+    " Want to grab the func1..func2..func3 as the function_stack
+    let function_stack = matchlist(a:throwpoint, 'function \(.*\),')[1]
+    " copy the function stack
+    let better_stack = function_stack
+    " split the function stack by the delimiting .. to get function names
+    let function_names = split(function_stack, '\.\.')
+    for function_name in function_names
+        " look for function names in the register
+        if has_key(self.functionRegister.functions, function_name)
+            " substitude better names
+            let better_name = self.functionRegister.functions[function_name]
+            let better_stack = substitute(better_stack, function_name, better_name, "g")
+        endif
+    endfor
+    " substitute better function stack into throwpoint
+    return substitute(a:throwpoint, function_stack, better_stack, "")
 endfunction
 
 " -----------------------------------------
@@ -482,7 +513,7 @@ endfunction
 " -----------------------------------------
 " FUNCTION: RunnerInit {{{2
 " PURPOSE:
-"   Reset statistics to zero
+"   Reset statistics to zero and self to functionRegister
 " ARGUMENTS:
 "   None
 " RETURNS:
@@ -494,6 +525,7 @@ function! UnitTest.RunnerInit() dict
     let self.testRunFailureCount = 0
     let self.testRunSuccessCount = 0
     let self.testRunErrorCount = 0
+    call self.functionRegister.AddObject(self, self.name)
 endfunction
 
 function! <sid>MsgSink(caller,msg)  "{{{2
