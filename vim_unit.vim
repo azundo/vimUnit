@@ -443,11 +443,11 @@ function! UnitTest.RunTests() dict
                 catch /vimUnitTestFailure/
                     let self.testRunFailureCount = self.testRunFailureCount + 1
                     let better_throwpoint = self.ParseThrowpoint(v:throwpoint)
-                    call <SID>MsgSink('FAILURE.', v:exception." in ".better_throwpoint)
+                    call <SID>MsgSink('FAILED: ', v:exception." in ".better_throwpoint)
                 catch
                     let self.testRunErrorCount = self.testRunErrorCount + 1
                     let better_throwpoint = self.ParseThrowpoint(v:throwpoint)
-                    let message = "ERROR. Exception: ".v:exception." in ".better_throwpoint
+                    let message = "ERROR: Exception: ".v:exception." in ".better_throwpoint
                     call <SID>MsgSink(key, message)
                 endtry
             endif
@@ -530,7 +530,11 @@ endfunction
 
 function! <sid>MsgSink(caller,msg)  "{{{2
     if g:vimUnitVerbosity > 0
+        echo ''
+        echo '----------------------------------'
         echo a:caller.': '.a:msg
+        echo '----------------------------------'
+        echo ''
     endif
 endfunction
 
