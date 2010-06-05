@@ -116,7 +116,12 @@ if !exists('g:vimUnitVerbosity')
     let g:vimUnitVerbosity = 1
 endif
 
-" A FunctionRegister object to keep track of objects' anonymous functions {{{2
+"   Buffer Variables {{{2
+if !exists('b:testSuites')
+    let b:testSuites = []
+endif
+
+" A FunctionRegister object to keep track of objects' anonymous functions {{{1
 " This object is a singleton so we only have to add objects to it once
 if !exists('FunctionRegister')
     let FunctionRegister = {}
@@ -390,32 +395,6 @@ function! UnitTest.AssertFalse(arg1, ...) dict
     return bFoo
 endfunction
 
-" VUAssert that the arg1 is initialized (is not null)
-" Is this situation possible in vim script?
-function! UnitTest.AssertNotNull(arg1, ...) dict    "{{{2
-    "NOTE: I do not think we will have a situation in a vim-script where we
-    "can pass a variable containing a null as I understand it that is a
-    "uninitiated variable.
-    "
-    "vim will give a warning (error) msg when we try to do this.
-    "
-    "BUT: We can have situations where we try to do this. Especialy if we are
-    "using on-the-fly variable names. :help curly-braces-names
-    "
-    if exists(a:arg1)
-        let bFoo = TRUE()
-    else
-        let msg = 'Null value: arg1 does not exist.'
-        " only include message if it exists
-        " This can't be possible
-        if a:0 > 0
-            let msg = msg.' '.a:1
-        endif
-        throw self.BuildException("AssertNotNull", msg)
-    endif
-    return bFoo 
-endfunction
-
 " ---------------------------------------------------------------------
 " FUNCTION: UnitTest.AssertFail {{{2
 " PURPOSE:
@@ -495,29 +474,6 @@ endfunction
 " RETURNS:
 "   None
 " -----------------------------------------
-function! UnitTest.RunTests() dict
-        call self.RunnerInit()
-        echomsg "Running: ".self.name
-        for key in keys(self)
-            if strpart(key, 0, 4) == 'Test' && type(self[key]) == type(function("tr"))
-                let self.testRunCount = self.testRunCount + 1
-                try
-                    call self[key]()
-                    let self.testRunSuccessCount = self.testRunSuccessCount + 1
-                catch /vimUnitTestFailure/
-                    let self.testRunFailureCount = self.testRunFailureCount + 1
-                    let better_throwpoint = self.functionRegister.ParseThrowpoint(v:throwpoint)
-                    call <SID>MsgSink('FAILED: ', v:exception." in ".better_throwpoint)
-                catch
-                    let self.testRunErrorCount = self.testRunErrorCount + 1
-                    let better_throwpoint = self.functionRegister.ParseThrowpoint(v:throwpoint)
-                    let message = "ERROR: Exception: ".v:exception." in ".better_throwpoint
-                    call <SID>MsgSink(key, message)
-                endtry
-            endif
-        endfor
-        call self.PrintStatistics(self.name)
-endfunction
 
 function! UnitTest.RunInSuite(suite) dict
     for key in keys(self)
@@ -534,49 +490,6 @@ function! UnitTest.RunInSuite(suite) dict
     endfor
 endfunction
 
-
-" -----------------------------------------
-" FUNCTION: UnitTest.PrintStatistics {{{2
-" PURPOSE:
-"   Print statistics about test's
-" ARGUMENTS:
-"   None
-" RETURNS:
-"   String containing statistics
-" -----------------------------------------
-function! UnitTest.PrintStatistics(caller,...) dict
-    if exists('a:caller')
-        let sFoo = "----- ".a:caller."---------------------------------------------\n"
-    else
-        let sFoo ="--------------------------------------------------\n"
-    endif
-    if exists('a:1') && a:1 != ''
-        let sFoo = sFoo."MSG: ".a:1
-    endif
-    let sFoo = sFoo."Test count:\t".self.testRunCount."\nTest Success:\t".self.testRunSuccessCount."\nTest failures:\t".self.testRunFailureCount."\nErrors:\t".self.testRunErrorCount
-    let sFoo = sFoo."\n--------------------------------------------------\n"
-    "
-    echo sFoo
-    return sFoo
-endfunction
-
-" -----------------------------------------
-" FUNCTION: UnitTest.RunnerInit {{{2
-" PURPOSE:
-"   Reset statistics to zero and self to functionRegister
-" ARGUMENTS:
-"   None
-" RETURNS:
-"   None
-" -----------------------------------------
-function! UnitTest.RunnerInit() dict
-    echomsg "CLEARING: statistics"
-    let self.testRunCount = 0
-    let self.testRunFailureCount = 0
-    let self.testRunSuccessCount = 0
-    let self.testRunErrorCount = 0
-    call self.functionRegister.AddObject(self, self.name)
-endfunction
 
 " TestSuite Object {{{1
 if !exists('TestSuite')
@@ -595,6 +508,7 @@ function! TestSuite.init(name) dict
     let instance.failures = []
     let instance.errors = []
     let instance.functionRegister = g:FunctionRegister
+    call add(b:testSuites, instance)
     return instance
 endfunction
 
@@ -677,72 +591,9 @@ function! TestSuite.PrintResults() dict
     return sFoo
 endfunction
 
-function! <sid>MsgSink(caller,msg)  "{{{2
-    if g:vimUnitVerbosity > 0
-        echo ''
-        echo '----------------------------------'
-        echo a:caller.': '.a:msg
-        echo '----------------------------------'
-        echo ''
-    endif
-endfunction
-
-"staale - GetCurrentFunctionName()
-"Extract the function name the cursor is inside
-function! <SID>GetCurrentFunctionName()     "{{{2
-    "call s:FindBlock('\s*fu\%[nction]\>!\=\s.*(\%([^)]*)\|\%(\n\s*\\[^)]*\)*\n)\)', '', '', '^\s*endf\%[unction]', 0)
-    "bWn ==> b=Search backward, W=Don't wrap around end of file,n=Do not move cursor.
-    let nTop = searchpair('^\s*fu\%[nction]\%[!]\ .*','','^\s*endf\%[unction].*','bWn')
-    let sLine = getline(nTop)
-    return sLine
-endfunction
-
-function! <SID>ExtractFunctionName(strLine)     "{{{2
-" This used to be part of the GetCurrentFunctionName() routine
-" But to make as much as possible of the code testable we have to isolate code
-" that do any kind of buffer or window interaction.
-    let lStart = matchend(a:strLine,'\s*fu\%[nction]\%[!]\s')
-    let sFoo = matchstr(a:strLine,".*(",lStart)
-    let sFuncName =strpart(sFoo ,0,strlen(sFoo)-1)
-    return sFuncName
-endfunction
-
-
-"function VUAutoRun {{{2
-" We have to make a check so we can AutoRun vimUnit.vim itself
-if !exists('s:vimUnitAutoRun')
-    let s:vimUnitAutoRun = 0
-endif
-if s:vimUnitAutoRun == 0
-" function! VUAutoRun()
-"   "NOTE:If you change thsi code you must manualy source the file!
-"
-"   let s:vimUnitAutoRun = 1
-"   "Prevent VimUnit from runing selftest if we are testing VimUnit.vim
-"   let b:currentVimSelfTest = g:vimUnitSelfTest
-"   let g:vimUnitSelfTest = 0
-"   "Locate function line on line with or above current line
-"   let sFoo = <SID>ExtractFunctionName(<SID>GetCurrentFunctionName())
-"   if match(sFoo,'^Test') > -1
-"       "We found the function name and it starts with Test so we source the
-"       "file and self.RunTests to run the test
-"       exe "w|so %"
-"       if exists( '*'.sFoo)
-"           self.RunTests(sFoo)
-"       else
-"           call confirm ("ERROR: VUAutoRunner. Function name: ".sFoo." Could not be found by function exists(".sFoo.")")
-"       endif
-"   else
-"       "
-"       echo "NOTE: Found function name: ".sFoo." Does not start with Test.So we will not run it automaticaly"
-"   endif
-"   let s:vimUnitAutoRun = 0
-"   let g:vimUnitSelfTest = b:currentVimSelfTest
-" endfunction
-endif
 
 " SelfTest class init {{{1
-let s:SelfTest = UnitTest.init("VimUnitSelfTestSuite")
+let s:SelfTest = UnitTest.init("VimUnitSelfTest")
 
 " SelfTest Assert {{{1
 function! s:SelfTest.TestAssertEquals() dict  "{{{2
@@ -797,8 +648,6 @@ function! s:SelfTest.TestAssertNotEquals() dict  "{{{2
     call self.AssertRaises('vimUnitTestFailure', self.AssertNotEquals, [arg1,arg2,'Simple test comparing two variables containing equal strings,expect failure'], self, "test1 and test1 should be equal, even when args.")
     call self.AssertNotEquals(0, "string", "A string and 0 should not be equal.")
     call self.AssertNotEquals(0, [0,], "A list and an int should not be equal.")
-
-
 endfunction
 
 function! s:SelfTest.TestAssertTrue() dict  "{{{2
@@ -858,35 +707,6 @@ function! s:SelfTest.TestAssertFalse() dict  "{{{2
     call self.AssertRaises('vimUnitTestFailure', self.AssertFalse, [{'one':"1"},'Passing non-empty dict to AssertFalse'], self, 'Non-empty dict should not be False')
     
 endfunction
-function! s:SelfTest.ATestAssertNotNull() dict "{{{2
-    "NOTE: I do not think we will have a situation in a vim-script where we
-    "can pass a variable containing a null as I understand it that is a
-    "uninitiated variable.
-    "
-    "vim will give a warning (error) msg when we try to do this.
-    "
-    "BUT: We can have situations where we try to do this. Especeialy if we are
-    "using on-the-fly variable names. :help curly-braces-names
-    "
-    let sSelf = 'TestAssertNotNull'
-    " call self.ExpectFailure(sSelf,'Trying to pass a unlet variable')
-    try
-        let sTest = ""
-        unlet sTest
-        call self.AssertNotNull(sTest,'Trying to pass a uninitiated variable')
-    catch
-        call self.AssertFail('Trying to pass a uninitiated variable')
-    endtry
-    
-    " call self.ExpectFailure(sSelf,'Trying to pass a uninitiated variable')
-    try
-        call self.AssertNotNull(sTest2,'Trying to pass a uninitated variable sTest2')
-    catch
-        call self.AssertFail('Trying to pass a uninitated variable sTest2')
-    endtry
-    
-endfunction
-
 
 
 function! s:SelfTest.TestAssertFail() dict  "{{{2
@@ -906,24 +726,19 @@ function! s:SelfTest.TestAssertRaises() dict "{{{2
     call self.AssertRaises('Called with 3 extra args', Fn, ['arg1', 'arg2', 'extra', 'another extra'], 'Function should raise exception matching "Called with 3 extra args"')
 endfunction
 
+" Functions {{{1
 
-function! s:SelfTest.TestExtractFunctionName() dict "{{{1
-    let sSelf = 'TestExtractFunctionName'
-    "Testing leagal function declarations
-    "NOTE: The markers in the test creates a bit of cunfusion
-    let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction()'),'straight function declaration')
-    let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func! TestFunction()'),'func with !')
-    let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName(' func TestFunction()'),'space before func')
-    let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('      func TestFunction()'),'Two embeded tabs before func') "Two embeded tabs
-    let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction()   "{{{3'),'Declaration with folding marker in comment' )
-    let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('   func TestFunction()    "{{{3'),'Declaration starting with space and ending with commented folding marker')
-    let sFoo = self.AssertEquals('TestFunction',<SID>ExtractFunctionName('func TestFunction(arg1, funcarg1, ..)'),'arguments contain func')
-endfunction "}}}
-
-function! b:AccessScriptVars()
-    call s:SelfTest.TestAssertNotEquals()
+function! s:RunAllTests()
+    for suite in b:testSuites
+        call suite.Run()
+    endfor
 endfunction
 
+" Commands {{{1
+
+if !exists(":RunAllTests")
+    command RunAllTests :call s:RunAllTests()
+endif
 
 " Help (Documentation) installation {{{1
 "
@@ -1057,13 +872,17 @@ endfunction
   silent! let s:help_install_status =
       \ <SID>InstallDocumentation(expand('<sfile>:p'), s:revision)
   if (s:help_install_status == 1)
-      call s:SelfTest.RunTests()
+      let s:SelfTestSuite = TestSuite.init("SelfTestSuite")
+      call s:SelfTestSuite.AddUnitTest(s:SelfTest)
+      call s:SelfTestSuite.Run()
       echom expand("<sfile>:t:r") . ' v' . s:revision .
         \ ': Help-documentation installed.'
   endif
 
     if (g:vimUnitSelfTest == 1)
-      call s:SelfTest.RunTests()
+      let s:SelfTestSuite = TestSuite.init("SelfTestSuite")
+      call s:SelfTestSuite.AddUnitTest(s:SelfTest)
+      call s:SelfTestSuite.Run()
       echo "Should run test here"
     endif
 
@@ -1211,8 +1030,6 @@ CONTENT  {{{2                                                *vimUnit-contents*
         VUAssert that arg1 is true.
     AssertFalse(arg1, ...)
         VUAssert that arg1 is false.
-    AssertNotNull(arg1, ...)
-        VUAssert that arg1 is initiated.
     AssertFail(...)
         Log a userdefined failure.
         
