@@ -118,7 +118,7 @@ endif
 
 "   Buffer Variables {{{2
 if !exists('b:testSuites')
-    let b:testSuites = []
+    let b:testSuites = {}
 endif
 
 " A FunctionRegister object to keep track of objects' anonymous functions {{{1
@@ -508,7 +508,7 @@ function! TestSuite.init(name) dict
     let instance.failures = []
     let instance.errors = []
     let instance.functionRegister = g:FunctionRegister
-    call add(b:testSuites, instance)
+    let b:testSuites[a:name] = instance
     return instance
 endfunction
 
@@ -729,7 +729,7 @@ endfunction
 " Functions {{{1
 
 function! s:RunAllTests()
-    for suite in b:testSuites
+    for suite in values(b:testSuites)
         call suite.Run()
     endfor
 endfunction
