@@ -548,8 +548,8 @@ function! TestSuite.AddTestResult(test, status, ...)
         let self.success_count = self.success_count + 1
     endif
     let self.status_string = self.status_string . a:status
-    redraw
-    echo self.status_string
+    " redraw
+    echo a:status
 endfunction
 
 function! TestSuite.AddError(test, exception, throwpoint)
