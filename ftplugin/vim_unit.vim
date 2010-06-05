@@ -133,6 +133,36 @@ function! FunctionRegister.AddObject(obj, name) dict
     endfor
 endfunction
 
+" -----------------------------------------
+" FUNCTION: FunctionRegister.ParseThrowpoint {{{2
+" PURPOSE:
+"   Substitute any anonymous function numbers with references if in
+"   FunctionRegister
+" ARGUMENTS:
+"   throwpoint: the v:throwpoint variable
+" RETURNS:
+"   parsed throwpoint with values from functionRegister.functions
+" -----------------------------------------
+function! FunctionRegister.ParseThrowpoint(throwpoint) dict
+    " Throwpoints are formatted as function func1..func2..func3, line n
+    " Want to grab the func1..func2..func3 as the function_stack
+    let function_stack = matchlist(a:throwpoint, 'function \(.*\),')[1]
+    " copy the function stack
+    let better_stack = function_stack
+    " split the function stack by the delimiting .. to get function names
+    let function_names = split(function_stack, '\.\.')
+    for function_name in function_names
+        " look for function names in the register
+        if has_key(self.functions, function_name)
+            " substitude better names
+            let better_name = self.functions[function_name]
+            let better_stack = substitute(better_stack, function_name, better_name, "g")
+        endif
+    endfor
+    " substitute better function stack into throwpoint
+    return substitute(a:throwpoint, function_stack, better_stack, "")
+endfunction
+
 
 
 " UnitTest Object {{{1
@@ -476,11 +506,11 @@ function! UnitTest.RunTests() dict
                     let self.testRunSuccessCount = self.testRunSuccessCount + 1
                 catch /vimUnitTestFailure/
                     let self.testRunFailureCount = self.testRunFailureCount + 1
-                    let better_throwpoint = self.ParseThrowpoint(v:throwpoint)
+                    let better_throwpoint = self.functionRegister.ParseThrowpoint(v:throwpoint)
                     call <SID>MsgSink('FAILED: ', v:exception." in ".better_throwpoint)
                 catch
                     let self.testRunErrorCount = self.testRunErrorCount + 1
-                    let better_throwpoint = self.ParseThrowpoint(v:throwpoint)
+                    let better_throwpoint = self.functionRegister.ParseThrowpoint(v:throwpoint)
                     let message = "ERROR: Exception: ".v:exception." in ".better_throwpoint
                     call <SID>MsgSink(key, message)
                 endtry
@@ -489,35 +519,21 @@ function! UnitTest.RunTests() dict
         call self.PrintStatistics(self.name)
 endfunction
 
-" -----------------------------------------
-" FUNCTION: UnitTest.ParseThrowpoint {{{2
-" PURPOSE:
-"   Substitute any anonymous function numbers with references if in
-"   FunctionRegister
-" ARGUMENTS:
-"   throwpoint: the v:throwpoint variable
-" RETURNS:
-"   parsed throwpoint with values from functionRegister.functions
-" -----------------------------------------
-function! UnitTest.ParseThrowpoint(throwpoint) dict
-    " Throwpoints are formatted as function func1..func2..func3, line n
-    " Want to grab the func1..func2..func3 as the function_stack
-    let function_stack = matchlist(a:throwpoint, 'function \(.*\),')[1]
-    " copy the function stack
-    let better_stack = function_stack
-    " split the function stack by the delimiting .. to get function names
-    let function_names = split(function_stack, '\.\.')
-    for function_name in function_names
-        " look for function names in the register
-        if has_key(self.functionRegister.functions, function_name)
-            " substitude better names
-            let better_name = self.functionRegister.functions[function_name]
-            let better_stack = substitute(better_stack, function_name, better_name, "g")
+function! UnitTest.RunInSuite(suite) dict
+    for key in keys(self)
+        if strpart(key, 0, 4) == 'Test' && type(self[key]) == type(function("tr"))
+            try
+                call self[key]()
+                call a:suite.AddTestResult(key, '.')
+            catch /vimUnitTestFailure/
+                call a:suite.AddTestResult(key, 'F', v:exception, v:throwpoint)
+            catch
+                call a:suite.AddTestResult(key, 'E', v:exception, v:throwpoint)
+            endtry
         endif
     endfor
-    " substitute better function stack into throwpoint
-    return substitute(a:throwpoint, function_stack, better_stack, "")
 endfunction
+
 
 " -----------------------------------------
 " FUNCTION: UnitTest.PrintStatistics {{{2
@@ -560,6 +576,105 @@ function! UnitTest.RunnerInit() dict
     let self.testRunSuccessCount = 0
     let self.testRunErrorCount = 0
     call self.functionRegister.AddObject(self, self.name)
+endfunction
+
+" TestSuite Object {{{1
+if !exists('TestSuite')
+    let TestSuite = {}
+endif
+
+function! TestSuite.init(name) dict
+    let instance = copy(self)
+    let instance.name = a:name
+    let instance.tests = []
+    let instance.status_string = ""
+    let instance.run_count = 0
+    let instance.success_count = 0
+    let instance.failure_count = 0
+    let instance.error_count = 0
+    let instance.failures = []
+    let instance.errors = []
+    let instance.functionRegister = g:FunctionRegister
+    return instance
+endfunction
+
+function! TestSuite.Setup() dict
+    let self.status_string = ""
+    let self.run_count = 0
+    let self.success_count = 0
+    let self.failure_count = 0
+    let self.error_count = 0
+    let self.failures = []
+    let self.errors = []
+    call self.functionRegister.AddObject(self, self.name)
+endfunction
+
+function! TestSuite.AddUnitTest(unit_test) dict
+    call add(self.tests, a:unit_test)
+endfunction
+
+function! TestSuite.Run() dict
+    call self.Setup()
+    for test in self.tests
+        call self.functionRegister.AddObject(test, test.name)
+        call test.RunInSuite(self)
+    endfor
+    echo self.PrintResults()
+endfunction
+
+function! TestSuite.AddTestResult(test, status, ...)
+    let self.run_count = self.run_count + 1
+    if a:status == 'F'
+        call self.AddFailure(a:test, a:1, a:2)
+        let self.failure_count = self.failure_count + 1
+    elseif a:status == 'E'
+        call self.AddError(a:test, a:1, a:2)
+        let self.error_count = self.error_count + 1
+    else
+        let self.success_count = self.success_count + 1
+    endif
+    let self.status_string = self.status_string . a:status
+    redraw
+    echo self.status_string
+endfunction
+
+function! TestSuite.AddError(test, exception, throwpoint)
+    call add(self.errors, [a:test, a:exception, a:throwpoint])
+endfunction
+
+function! TestSuite.AddFailure(test, exception, throwpoint)
+    call add(self.failures, [a:test, a:exception, a:throwpoint])
+endfunction
+
+function! TestSuite.PrintResults() dict
+    let sFoo = "Ran " . self.name . " Test Suite\n"
+    let sFoo = sFoo . "--Summary-----------------------------------------\n
+        \Test count:\t".self.run_count."\n
+        \Test Success:\t".self.success_count."\n
+        \Test failures:\t".self.failure_count."\n
+        \Errors:\t".self.error_count."\n
+        \--------------------------------------------------\n\n"
+    if len(self.failures) > 0
+        let sFoo = sFoo . "FAILURES:\n\n"
+        for failure in self.failures
+            let sFoo = sFoo . "--------------------------------------------------\n"
+            let sFoo = sFoo . "FAILED:\t".failure[0]."\n"
+            let sFoo = sFoo . "MSG:\t".failure[1]."\n"
+            let sFoo = sFoo . "STACK:\t" . self.functionRegister.ParseThrowpoint(failure[2]) . "\n"
+            let sFoo = sFoo . "--------------------------------------------------\n\n"
+        endfor
+    endif
+    if len(self.errors) > 0
+        let sFoo = sFoo . "ERRORS:\n\n"
+        for error in self.errors
+            let sFoo = sFoo . "--------------------------------------------------\n"
+            let sFoo = sFoo . "ERROR:\t".error[0]."\n"
+            let sFoo = sFoo . "EXCEPTION:\t".error[1]."\n"
+            let sFoo = sFoo . "STACK:\t" . self.functionRegister.ParseThrowpoint(error[2]) . "\n"
+            let sFoo = sFoo . "--------------------------------------------------\n"
+        endfor
+    endif
+    return sFoo
 endfunction
 
 function! <sid>MsgSink(caller,msg)  "{{{2
